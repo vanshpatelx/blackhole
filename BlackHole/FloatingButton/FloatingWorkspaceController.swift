@@ -90,7 +90,7 @@ final class FloatingWorkspaceController {
             }
         }
         unmountWork = work
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2, execute: work)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.42, execute: work)
     }
 }
 
@@ -109,19 +109,19 @@ private struct FloatingWorkspaceRoot: View {
             .clipShape(shape)
             .compositingGroup()
             // Grow out of the side facing the button.
-            .scaleEffect(shown ? 1 : 0.9, anchor: model.floatingOpensLeft ? .trailing : .leading)
+            .scaleEffect(shown ? 1 : 0.92, anchor: model.floatingOpensLeft ? .trailing : .leading)
+            .animation(shown ? NotchViewModel.contentScaleIn : NotchViewModel.collapseAnimation, value: shown)
             .opacity(shown ? 1 : 0)
+            .animation(shown ? NotchViewModel.contentFadeIn : NotchViewModel.contentOut, value: shown)
             .allowsHitTesting(shown)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .preferredColorScheme(.dark)
             .onChange(of: model.isFloatingOpen) { _, open in
                 if open {
                     // Wait one runloop so the window is on screen before the spring starts.
-                    DispatchQueue.main.async {
-                        withAnimation(NotchViewModel.expandAnimation) { shown = model.isFloatingOpen }
-                    }
+                    DispatchQueue.main.async { shown = model.isFloatingOpen }
                 } else {
-                    withAnimation(.easeIn(duration: 0.15)) { shown = false }
+                    shown = false
                 }
             }
     }

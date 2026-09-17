@@ -34,9 +34,10 @@ struct NotchRootView: View {
                 .padding(.horizontal, NotchGeometry.flare + NotchGeometry.inset)
                 .frame(width: g.expandedSize.width, height: g.expandedSize.height, alignment: .top)
                 .compositingGroup()
-                .scaleEffect(expanded ? 1 : 0.9, anchor: .top)
+                .scaleEffect(expanded ? 1 : 0.94, anchor: .top)
+                .animation(expanded ? NotchViewModel.contentScaleIn : NotchViewModel.collapseAnimation, value: expanded)
                 .opacity(expanded ? 1 : 0)
-                .animation(expanded ? .smooth(duration: 0.34).delay(0.06) : .easeOut(duration: 0.12), value: expanded)
+                .animation(expanded ? NotchViewModel.contentFadeIn : NotchViewModel.contentOut, value: expanded)
                 .allowsHitTesting(expanded)
                 .accessibilityHidden(!expanded)
 
@@ -44,7 +45,7 @@ struct NotchRootView: View {
                 IslandTimer(notchWidth: g.hasNotch ? g.notchSize.width : 0,
                             height: Self.collapsedSize(geometry: g, timerActive: true).height)
                     .opacity(island ? 1 : 0)
-                    .animation(island ? .smooth(duration: 0.3).delay(0.14) : .easeOut(duration: 0.1), value: island)
+                    .animation(island ? .easeOut(duration: 0.3).delay(0.18) : .easeOut(duration: 0.12), value: island)
                     .allowsHitTesting(false)
             }
         }

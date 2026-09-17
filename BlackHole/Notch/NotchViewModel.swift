@@ -27,9 +27,13 @@ final class NotchViewModel {
     /// Fires whenever the workspace is opened from anywhere.
     @ObservationIgnored var onExpansionVisit: (() -> Void)?
 
-    /// A touch of bounce on the way out, none on the way back in, like the Dynamic Island.
-    static let expandAnimation = Animation.spring(duration: 0.48, bounce: 0.2)
-    static let collapseAnimation = Animation.spring(duration: 0.34, bounce: 0)
+    /// macOS-style motion: a long, gentle ease-out that settles without visible bounce.
+    static let expandAnimation = Animation.spring(duration: 0.52, bounce: 0.06)
+    static let collapseAnimation = Animation.spring(duration: 0.4, bounce: 0)
+    /// Content grows with the shape; it only fades a little faster so it never looks washed out.
+    static let contentScaleIn = Animation.spring(duration: 0.52, bounce: 0.04)
+    static let contentFadeIn = Animation.easeOut(duration: 0.3).delay(0.03)
+    static let contentOut = Animation.easeOut(duration: 0.18)
 
     func expand(pinned: Bool = false) {
         closeFloating()

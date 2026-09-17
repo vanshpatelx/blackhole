@@ -1,0 +1,64 @@
+name: BlackHole
+options:
+  bundleIdPrefix: app.getblackhole
+  deploymentTarget:
+    macOS: "14.0"
+  createIntermediateGroups: true
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    MACOSX_DEPLOYMENT_TARGET: "14.0"
+    ARCHS: arm64
+    CODE_SIGN_IDENTITY: "-"
+    CODE_SIGN_STYLE: Manual
+    DEVELOPMENT_TEAM: ""
+    ENABLE_HARDENED_RUNTIME: NO
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+targets:
+  BlackHole:
+    type: application
+    platform: macOS
+    sources: [BlackHole]
+    entitlements:
+      path: BlackHole/Support/BlackHole.entitlements
+      properties:
+        com.apple.security.personal-information.calendars: true
+    info:
+      path: BlackHole/Support/Info.plist
+      properties:
+        CFBundleName: Black Hole
+        CFBundleDisplayName: Black Hole
+        CFBundleIconFile: AppIcon
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        LSUIElement: true
+        LSApplicationCategoryType: public.app-category.productivity
+        NSCalendarsFullAccessUsageDescription: Black Hole shows today's upcoming events next to your tasks. It only reads events and never changes them.
+        NSHumanReadableCopyright: © 2026 Black Hole · getblackhole.app
+    settings:
+      base:
+        PRODUCT_NAME: Black Hole
+        PRODUCT_MODULE_NAME: BlackHole
+        PRODUCT_BUNDLE_IDENTIFIER: app.getblackhole.mac
+        GENERATE_INFOPLIST_FILE: NO
+  BlackHoleTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources: [BlackHoleTests]
+    dependencies:
+      - target: BlackHole
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: app.getblackhole.mac.tests
+        BUNDLE_LOADER: "$(TEST_HOST)"
+        TEST_HOST: "$(BUILT_PRODUCTS_DIR)/Black Hole.app/Contents/MacOS/Black Hole"
+        GENERATE_INFOPLIST_FILE: YES
+schemes:
+  BlackHole:
+    build:
+      targets:
+        BlackHole: all
+        BlackHoleTests: [test]
+    test:
+      targets: [BlackHoleTests]

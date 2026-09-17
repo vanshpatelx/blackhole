@@ -1,0 +1,122 @@
+<p align="center">
+  <img src="docs/images/icon.png" width="128" alt="Black Hole app icon">
+</p>
+
+<h1 align="center">Black Hole</h1>
+
+<p align="center">
+  <b>Your whole day, one hover away.</b><br>
+  Tasks, a focus timer, a daily notepad and today's calendar, living in your Mac's notch.
+</p>
+
+<p align="center">
+  <a href="https://github.com/vanshpatelx/blackhole/releases/latest"><b>Download for Mac</b></a> ·
+  <a href="https://getblackhole.app">getblackhole.app</a> ·
+  <a href="docs/ROADMAP.md">Roadmap</a>
+</p>
+
+<p align="center">
+  <img src="docs/images/workspace.png" alt="Black Hole workspace dropping out of the MacBook notch">
+</p>
+
+## Why
+
+Your to-do app is in another window, your timer is in another app, and your notes are somewhere else. Black Hole puts all of it at the top of your screen. Hover the notch (or press <kbd>⌥</kbd><kbd>N</kbd>), do the thing, and get back to work.
+
+It's free, open source, and your data never leaves your Mac.
+
+## Features
+
+- **Today's tasks**: add, check off, drag to reorder, set time limits and reminders, move to tomorrow. Unfinished tasks roll over to the next day on their own.
+- **Focus timer**: countdown or stopwatch with pause, resume and +5 minutes. While it runs, the time stays visible in the notch. It pauses when your Mac sleeps.
+- **Daily notepad**: saves as you type. Put the cursor on a line and press <kbd>⌘</kbd><kbd>↩</kbd> to turn it into a task.
+- **Events from all your calendars**: iCloud, Google (as many accounts as you like), Outlook/Exchange and subscribed calendars, color-coded and read-only. Pick which calendars show in **Settings → Calendars**.
+- **Insights**: focus time, completed vs. planned tasks, active days and your streak over the last week.
+- **Floating button**: a draggable button for any display (great with external monitors). Click it and the whole workspace opens right next to it.
+- **Holey the mascot**: blinks, looks up when you hover, cheers when you finish something, gets serious during focus sessions, and dozes off when you've been away.
+
+<p align="center">
+  <img src="docs/images/floating.png" width="49%" alt="Workspace opened from the floating button">
+  <img src="docs/images/insights.png" width="49%" alt="Insights with weekly focus time">
+</p>
+
+<p align="center">
+  <img src="docs/images/moods.png" width="80%" alt="Holey's moods: normal, happy, focused, sleepy">
+</p>
+
+## Install
+
+1. Download the latest `BlackHole-x.y.z.dmg` from [Releases](https://github.com/vanshpatelx/blackhole/releases/latest).
+2. Open it and drag **Black Hole** into **Applications**.
+3. Open Black Hole. Current builds aren't notarized by Apple yet, so macOS will block the first launch:
+   - Open **System Settings → Privacy & Security**, scroll down and click **Open Anyway** next to Black Hole, **or**
+   - run `xattr -dr com.apple.quarantine "/Applications/Black Hole.app"` in Terminal.
+
+**Requirements:** macOS 14 Sonoma or later on Apple silicon. No notch? It still works: the workspace opens from the top center of your screen, or from the floating button. Intel Macs can [build from source](#build-from-source) after changing `ARCHS` in `project.yml`.
+
+## How to use
+
+| Action | How |
+|---|---|
+| Open the workspace | Hover the notch, press <kbd>⌥</kbd><kbd>N</kbd>, or click the floating button |
+| Close it | <kbd>Esc</kbd>, click outside, or move the pointer away |
+| Note line → task | <kbd>⌘</kbd><kbd>↩</kbd> in the notepad |
+| Task actions | Right-click a task, or use its **⋯** menu |
+| Move the floating button | Drag it; it snaps to the nearest screen edge. Right-click it for more |
+| Full window | **Open app** in the top bar |
+
+## Google and Outlook calendars
+
+Black Hole reads calendars through macOS, so add your accounts there once:
+
+1. **System Settings → Internet Accounts → Add Account → Google** (repeat for each Google account; Microsoft Exchange/Outlook works the same way).
+2. Make sure **Calendars** is switched on for the account.
+3. In Black Hole, open **Settings → Calendars** and tick the calendars you want to see.
+
+## Privacy
+
+Everything is stored locally in `~/Library/Application Support/Black Hole/`. There are no accounts, analytics or network calls. Calendar access is optional and read-only: Black Hole never creates, edits or deletes events. You can export everything as JSON from **Settings → Data**.
+
+## Build from source
+
+```bash
+brew install xcodegen
+git clone https://github.com/vanshpatelx/blackhole.git
+cd blackhole
+make run      # generate the Xcode project, build and launch
+```
+
+| Command | What it does |
+|---|---|
+| `make project` | Generate `BlackHole.xcodeproj` from `project.yml` (then open it in Xcode if you like) |
+| `make run` | Debug build and launch |
+| `make demo` | Launch with sample data in memory; your real data is untouched |
+| `make test` | Run the unit tests |
+| `make dmg` | Build a Release DMG into `dist/` |
+
+Needs Xcode 16 or later. The Xcode project is generated and not committed, so edit `project.yml` for target settings.
+
+### Project layout
+
+```
+BlackHole/
+├─ App/              App entry, shared services (database, timer, calendar, mascot mood)
+├─ Notch/            Notch panel window, hover + hotkey handling, notch shape, top bar
+├─ FloatingButton/   Draggable floating button and the workspace that opens beside it
+├─ Features/         Tasks, Focus timer, Notepad, Events, Insights, Settings, Dashboard
+├─ Data/             SwiftData models, JSON export, demo data
+├─ DesignSystem/     Colors, cards, buttons, dot-matrix digits, Holey the mascot
+└─ Resources/        App icon
+```
+
+## Roadmap
+
+Next up: an **MCP server** so AI assistants like Claude and Cursor can read and plan your day, and **multi-device sync** you control (your own Supabase or self-hosted server). See [docs/ROADMAP.md](docs/ROADMAP.md) and the [sync + MCP design](docs/SYNC_AND_MCP.md).
+
+## Contributing
+
+Issues and pull requests are welcome. Start with [CONTRIBUTING.md](CONTRIBUTING.md).
+
+## License
+
+[MIT](LICENSE)

@@ -78,6 +78,35 @@ final class TaskActions {
         save()
     }
 
+    func move(_ task: TaskItem, toDay dayKey: String) {
+        guard task.dayKey != dayKey else { return }
+        task.sortIndex = (tasks(for: dayKey).map(\.sortIndex).max() ?? -1) + 1
+        task.dayKey = dayKey
+        if focus.taskID == task.id { focus.stop() }
+        save()
+    }
+
+    func note(for dayKey: String) -> DailyNote? {
+        var d = FetchDescriptor<DailyNote>(predicate: #Predicate { $0.dayKey == dayKey })
+        d.fetchLimit = 1
+        return try? context.fetch(d).first
+    }
+
+    /// Adds a line to the end of a day's notepad, creating the note if needed.
+    @discardableResult
+    func appendToNote(_ text: String, dayKey: String) -> DailyNote {
+        let line = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        let note = self.note(for: dayKey) ?? {
+            let n = DailyNote(dayKey: dayKey)
+            context.insert(n)
+            return n
+        }()
+        note.text = note.text.isEmpty ? line : note.text + (note.text.hasSuffix("\n") ? "" : "\n") + line
+        note.updatedAt = .now
+        save()
+        return note
+    }
+
     func moveToTomorrow(_ task: TaskItem) {
         let tomorrow = DayKey.adding(days: 1, to: DayKey.today)
         task.sortIndex = (tasks(for: tomorrow).map(\.sortIndex).max() ?? -1) + 1

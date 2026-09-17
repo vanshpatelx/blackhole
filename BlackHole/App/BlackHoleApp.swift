@@ -36,7 +36,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // `-startFocus 25` starts a focus session of that many minutes on launch (0 = stopwatch).
         if args.object(forKey: "startFocus") != nil {
             let minutes = args.integer(forKey: "startFocus")
-            services.focus.start(targetSec: minutes > 0 ? minutes * 60 : nil)
+            services.focus.start(targetSec: minutes > 0 ? minutes * 60 : nil, stopwatch: minutes == 0)
         }
         #if DEBUG
         // `-animationLoop YES` opens and closes the notch every 1.6s, for checking animation smoothness.

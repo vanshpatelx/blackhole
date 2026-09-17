@@ -14,6 +14,8 @@ final class AppServices {
     let notch = NotchViewModel()
     let mascot = MascotMoodCenter()
     let taskActions: TaskActions
+    /// Local MCP endpoint for AI assistants. Not started in demo mode.
+    private(set) var mcp: MCPServer!
 
     /// Our own file under Application Support. SwiftData's default `default.store` is shared by every
     /// unsandboxed app that doesn't pick a location.
@@ -47,6 +49,8 @@ final class AppServices {
         notch.onExpansionVisit = { [mascot] in mascot.poke() }
         dayClock.onDayChange = { [weak self] in self?.taskActions.rollOverUnfinishedTasks() }
         if !Self.isDemo { taskActions.rollOverUnfinishedTasks() }
+        let router = MCPRouter(context: container.mainContext, tasks: taskActions, focus: focus, calendar: calendar)
+        mcp = MCPServer(router: router, allowStart: !Self.isDemo)
     }
 }
 
@@ -90,5 +94,6 @@ extension View {
             .environment(services.notch)
             .environment(services.taskActions)
             .environment(services.mascot)
+            .environment(services.mcp)
     }
 }

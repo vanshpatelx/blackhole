@@ -65,17 +65,22 @@ struct SettingsView: View {
             }
 
             Card(tint: Palette.notepad) {
-                VStack(alignment: .leading, spacing: 10) {
-                    CardHeader(icon: "externaldrive", title: "Data")
-                    Text("Everything stays on this Mac. Export a JSON backup any time.")
-                        .font(.system(size: 12))
-                        .foregroundStyle(Palette.inkSecondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                    Button("Export Backup…", action: exportBackup).buttonStyle(PillButtonStyle())
+                VStack(alignment: .leading, spacing: 9) {
+                    CardHeader(icon: "sparkles", title: "AI & Data")
+                    MCPSettings()
+                    Rectangle().fill(Palette.inkTertiary.opacity(0.5)).frame(height: 0.5)
+                    HStack {
+                        Text("Stored only on this Mac")
+                            .font(.system(size: 11))
+                            .foregroundStyle(Palette.inkSecondary)
+                        Spacer()
+                        Button("Export…", action: exportBackup)
+                            .buttonStyle(.plain)
+                            .font(.system(size: 11, weight: .semibold))
+                    }
                     if let exportMessage {
                         Text(exportMessage).font(.system(size: 10, weight: .medium))
                     }
-                    Spacer()
                 }
             }
 
@@ -200,5 +205,75 @@ private struct CalendarPicker: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
+    }
+}
+
+/// Turns the local MCP server on and off and hands out client configs.
+private struct MCPSettings: View {
+    @Environment(MCPServer.self) private var mcp
+    @State private var copied: MCPServer.Client?
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 7) {
+            Toggle(isOn: Binding(get: { mcp.config.enabled }, set: { mcp.setEnabled($0) })) {
+                VStack(alignment: .leading, spacing: 1) {
+                    Text("MCP server").font(.system(size: 12, weight: .medium))
+                    Text("Let Claude, Cursor and other AI apps plan your day")
+                        .font(.system(size: 10.5))
+                        .foregroundStyle(Palette.inkSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            .toggleStyle(.switch)
+            .controlSize(.mini)
+            .tint(Palette.ink)
+
+            if mcp.config.enabled {
+                HStack(spacing: 5) {
+                    Circle().fill(statusColor).frame(width: 6, height: 6)
+                    Text(statusText).font(.system(size: 10.5, weight: .medium)).lineLimit(1)
+                }
+                .foregroundStyle(Palette.inkSecondary)
+
+                PlainMenu {
+                    ForEach(MCPServer.Client.allCases) { client in
+                        Button(client.rawValue) { copy(client) }
+                    }
+                    Divider()
+                    Button("Reset Access Token") { mcp.regenerateToken() }
+                } label: {
+                    Label(copied.map { "Copied for \($0.rawValue)" } ?? "Copy setup for…", systemImage: copied == nil ? "doc.on.doc" : "checkmark")
+                        .labelStyle(CompactLabelStyle())
+                        .font(.system(size: 11.5, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 11)
+                        .frame(height: 26)
+                        .background(RoundedRectangle(cornerRadius: Radius.pill, style: .continuous).fill(Palette.ink))
+                }
+            }
+        }
+    }
+
+    private var statusText: String {
+        switch mcp.state {
+        case .running(let port): "Running on 127.0.0.1:\(port)"
+        case .failed(let reason): "Couldn't start: \(reason)"
+        case .off: "Starting…"
+        }
+    }
+
+    private var statusColor: Color {
+        switch mcp.state {
+        case .running: Color(hex: 0x2F9E44)
+        case .failed: Color(hex: 0xC92A2A)
+        case .off: Palette.inkTertiary
+        }
+    }
+
+    private func copy(_ client: MCPServer.Client) {
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(mcp.snippet(for: client), forType: .string)
+        withAnimation { copied = client }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2) { withAnimation { copied = nil } }
     }
 }

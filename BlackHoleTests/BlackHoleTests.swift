@@ -125,3 +125,105 @@ final class DotMatrixTests: XCTestCase {
         XCTAssertEqual(DotMatrixText.format(seconds: 3725), "1:02:05")
     }
 }
+
+@MainActor
+final class MCPRouterTests: XCTestCase {
+    private var container: ModelContainer!
+    private var router: MCPRouter!
+    private var tasks: TaskActions!
+
+    override func setUp() async throws {
+        container = try ModelContainer(for: TaskItem.self, FocusSession.self, DailyNote.self,
+                                       configurations: ModelConfiguration(isStoredInMemoryOnly: true))
+        let focus = FocusEngine(context: container.mainContext, defaults: UserDefaults(suiteName: "MCPRouterTests-\(UUID())")!)
+        tasks = TaskActions(context: container.mainContext, focus: focus)
+        router = MCPRouter(context: container.mainContext, tasks: tasks, focus: focus, calendar: nil)
+    }
+
+    private func call(_ method: String, _ params: [String: Any] = [:], id: Int = 1) throws -> [String: Any] {
+        let body = try JSONSerialization.data(withJSONObject: ["jsonrpc": "2.0", "id": id, "method": method, "params": params])
+        let reply = try XCTUnwrap(router.handle(body))
+        return try XCTUnwrap(JSONSerialization.jsonObject(with: reply) as? [String: Any])
+    }
+
+    private func tool(_ name: String, _ args: [String: Any] = [:]) throws -> [String: Any] {
+        let reply = try call("tools/call", ["name": name, "arguments": args])
+        let result = try XCTUnwrap(reply["result"] as? [String: Any])
+        XCTAssertEqual(result["isError"] as? Bool, false, "\(name) failed: \(result)")
+        return try XCTUnwrap(result["structuredContent"] as? [String: Any])
+    }
+
+    func testInitializeNegotiatesVersion() throws {
+        let result = try XCTUnwrap(try call("initialize", ["protocolVersion": "2025-03-26"])["result"] as? [String: Any])
+        XCTAssertEqual(result["protocolVersion"] as? String, "2025-03-26")
+        let unknown = try XCTUnwrap(try call("initialize", ["protocolVersion": "1999-01-01"])["result"] as? [String: Any])
+        XCTAssertEqual(unknown["protocolVersion"] as? String, MCPRouter.latestProtocolVersion)
+    }
+
+    func testNotificationsGetNoReply() throws {
+        let body = try JSONSerialization.data(withJSONObject: ["jsonrpc": "2.0", "method": "notifications/initialized"])
+        XCTAssertNil(router.handle(body))
+    }
+
+    func testToolsListHasTheCatalog() throws {
+        let result = try XCTUnwrap(try call("tools/list")["result"] as? [String: Any])
+        let names = (result["tools"] as? [[String: Any]])?.compactMap { $0["name"] as? String } ?? []
+        XCTAssertTrue(names.contains("add_task"))
+        XCTAssertTrue(names.contains("start_focus"))
+        XCTAssertEqual(Set(names).count, names.count, "Tool names must be unique")
+    }
+
+    func testAddUpdateListAndDeleteTask() throws {
+        let added = try XCTUnwrap(try tool("add_task", ["title": "Write docs", "time_limit_minutes": 30])["task"] as? [String: Any])
+        let id = try XCTUnwrap(added["id"] as? String)
+        XCTAssertEqual(added["time_limit_minutes"] as? Int, 30)
+
+        _ = try tool("update_task", ["id": id, "done": true])
+        let listed = try XCTUnwrap(try tool("list_tasks")["tasks"] as? [[String: Any]])
+        XCTAssertEqual(listed.count, 1)
+        XCTAssertEqual(listed.first?["done"] as? Bool, true)
+
+        _ = try tool("update_task", ["id": id, "day": "tomorrow"])
+        XCTAssertEqual((try tool("list_tasks")["tasks"] as? [[String: Any]])?.count, 0)
+        XCTAssertEqual((try tool("list_tasks", ["day": "tomorrow"])["tasks"] as? [[String: Any]])?.count, 1)
+
+        _ = try tool("delete_task", ["id": id])
+        XCTAssertEqual((try tool("list_tasks", ["day": "tomorrow"])["tasks"] as? [[String: Any]])?.count, 0)
+    }
+
+    func testFocusLifecycle() throws {
+        XCTAssertEqual(try tool("start_focus", ["minutes": 10])["state"] as? String, "running")
+        XCTAssertEqual(try tool("pause_focus")["state"] as? String, "paused")
+        XCTAssertEqual(try tool("focus_status")["mode"] as? String, "countdown")
+        XCTAssertEqual(try tool("stop_focus")["state"] as? String, "idle")
+        XCTAssertEqual(try tool("start_focus", ["minutes": 0])["mode"] as? String, "stopwatch")
+    }
+
+    func testAppendNoteNeverOverwrites() throws {
+        _ = try tool("append_note", ["text": "first"])
+        let text = try tool("append_note", ["text": "second"])["text"] as? String
+        XCTAssertEqual(text, "first\nsecond")
+    }
+
+    func testBadInputIsAToolErrorNotACrash() throws {
+        let reply = try call("tools/call", ["name": "update_task", "arguments": ["id": "not-a-uuid"]])
+        let result = try XCTUnwrap(reply["result"] as? [String: Any])
+        XCTAssertEqual(result["isError"] as? Bool, true)
+
+        let unknown = try call("tools/call", ["name": "launch_rockets"])
+        XCTAssertNotNil(unknown["error"])
+        XCTAssertNotNil(try call("does/not/exist")["error"])
+    }
+}
+
+final class HTTPRequestParsingTests: XCTestCase {
+    func testWaitsForFullBody() {
+        let head = "POST /mcp HTTP/1.1\r\nContent-Length: 10\r\nAuthorization: Bearer abc\r\n\r\n"
+        XCTAssertNil(HTTPRequest(Data((head + "12345").utf8)))
+        let request = HTTPRequest(Data((head + "1234567890").utf8))
+        XCTAssertEqual(request?.method, "POST")
+        XCTAssertEqual(request?.path, "/mcp")
+        XCTAssertEqual(request?.headers["authorization"], "Bearer abc")
+        XCTAssertEqual(request?.body.count, 10)
+    }
+}

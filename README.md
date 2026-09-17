@@ -33,6 +33,7 @@ It's free, open source, and your data never leaves your Mac.
 - **Events from all your calendars**: iCloud, Google (as many accounts as you like), Outlook/Exchange and subscribed calendars, color-coded and read-only. Pick which calendars show in **Settings → Calendars**.
 - **Insights**: focus time, completed vs. planned tasks, active days and your streak over the last week.
 - **Floating button**: a draggable button for any display (great with external monitors). Click it and the whole workspace opens right next to it.
+- **Works with AI assistants (MCP)**: turn on the built-in MCP server and Claude, Cursor or any MCP client can list and add tasks, run focus sessions, read your notes and pull insights.
 - **Holey the mascot**: blinks, looks up when you hover, cheers when you finish something, gets serious during focus sessions, and dozes off when you've been away.
 
 <p align="center">
@@ -73,9 +74,28 @@ Black Hole reads calendars through macOS, so add your accounts there once:
 2. Make sure **Calendars** is switched on for the account.
 3. In Black Hole, open **Settings → Calendars** and tick the calendars you want to see.
 
+## Use it from Claude, Cursor and other AI apps (MCP)
+
+Black Hole has a built-in [Model Context Protocol](https://modelcontextprotocol.io) server. It's off by default and only listens on `127.0.0.1`, protected by a token.
+
+1. Open **Settings → AI & Data** and turn on **MCP server**.
+2. Click **Copy setup for…** and pick your client:
+   - **Claude Code**: paste the copied `claude mcp add …` command into your terminal.
+   - **Cursor**: paste the JSON into `~/.cursor/mcp.json`.
+   - **Claude Desktop**: paste the JSON into `~/Library/Application Support/Claude/claude_desktop_config.json`. It uses the bundled `blackhole-mcp` command, which launches Black Hole if it isn't running.
+3. Ask things like *"add my three most urgent GitHub issues to today"*, *"start a 45-minute focus session on the launch post"* or *"what did I focus on this week?"*
+
+| Tool | What it does |
+|---|---|
+| `list_tasks`, `add_task`, `update_task`, `delete_task` | Manage tasks for any day |
+| `start_focus`, `pause_focus`, `resume_focus`, `stop_focus`, `focus_status` | Control the focus timer |
+| `read_note`, `append_note` | Read and add to the daily notepad (never overwrites) |
+| `get_insights` | Planned/completed tasks and focus minutes per day, plus streak |
+| `todays_events` | Today's events from the calendars you chose to show |
+
 ## Privacy
 
-Everything is stored locally in `~/Library/Application Support/Black Hole/`. There are no accounts, analytics or network calls. Calendar access is optional and read-only: Black Hole never creates, edits or deletes events. You can export everything as JSON from **Settings → Data**.
+Everything is stored locally in `~/Library/Application Support/Black Hole/`. There are no accounts, analytics or outgoing network calls. The optional MCP server only accepts connections from this Mac. Calendar access is optional and read-only: Black Hole never creates, edits or deletes events. You can export everything as JSON from **Settings → Data**.
 
 ## Build from source
 
@@ -103,15 +123,17 @@ BlackHole/
 ├─ App/              App entry, shared services (database, timer, calendar, mascot mood)
 ├─ Notch/            Notch panel window, hover + hotkey handling, notch shape, top bar
 ├─ FloatingButton/   Draggable floating button and the workspace that opens beside it
+├─ MCP/              Local MCP server (JSON-RPC over HTTP on 127.0.0.1) and its tools
 ├─ Features/         Tasks, Focus timer, Notepad, Events, Insights, Settings, Dashboard
 ├─ Data/             SwiftData models, JSON export, demo data
 ├─ DesignSystem/     Colors, cards, buttons, dot-matrix digits, Holey the mascot
 └─ Resources/        App icon
+BlackHoleMCP/        `blackhole-mcp` stdio bridge bundled inside the app
 ```
 
 ## Roadmap
 
-Next up: an **MCP server** so AI assistants like Claude and Cursor can read and plan your day, and **multi-device sync** you control (your own Supabase or self-hosted server). See [docs/ROADMAP.md](docs/ROADMAP.md) and the [sync + MCP design](docs/SYNC_AND_MCP.md).
+Next up: **multi-device sync** you control (your own Supabase or self-hosted server). See [docs/ROADMAP.md](docs/ROADMAP.md) and the [sync + MCP design](docs/SYNC_AND_MCP.md).
 
 ## Contributing
 

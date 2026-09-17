@@ -18,6 +18,8 @@ private struct DailyNotepad: View {
     @State private var text = ""
     @State private var saveWork: DispatchWorkItem?
     @State private var flash = false
+    /// Last text this card wrote, so its own saves aren't mistaken for outside edits.
+    @State private var lastSaved: String?
 
     init(dayKey: String) {
         self.dayKey = dayKey
@@ -55,6 +57,11 @@ private struct DailyNotepad: View {
             }
         }
         .onAppear { text = notes.first?.text ?? "" }
+        .onChange(of: notes.first?.updatedAt) { _, _ in
+            // Pick up edits made outside this card, e.g. by an assistant over MCP.
+            let stored = notes.first?.text ?? ""
+            if stored != lastSaved, stored != text { text = stored }
+        }
         .onChange(of: text) { _, newValue in scheduleSave(newValue) }
         .onDisappear { saveNow(text) }
     }
@@ -77,6 +84,7 @@ private struct DailyNotepad: View {
     }
 
     private func saveNow(_ value: String) {
+        lastSaved = value
         if let note = notes.first {
             guard note.text != value else { return }
             note.text = value

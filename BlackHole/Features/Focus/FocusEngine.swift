@@ -69,9 +69,10 @@ final class FocusEngine {
         persist()
     }
 
-    func start(taskID: UUID? = nil, targetSec: Int? = nil) {
+    /// Starts a session. With no `targetSec` it uses the card's preset; `stopwatch` forces counting up.
+    func start(taskID: UUID? = nil, targetSec: Int? = nil, stopwatch: Bool = false) {
         if isActive { endSession() }
-        let target = targetSec ?? presetSec
+        let target = stopwatch ? nil : (targetSec ?? presetSec)
         let session = FocusSession(taskID: taskID, targetSec: target)
         context.insert(session)
         sessionID = session.id

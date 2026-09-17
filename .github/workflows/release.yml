@@ -21,6 +21,11 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
-          gh release create "$GITHUB_REF_NAME" \
-            "dist/BlackHole-$VERSION.dmg" "dist/BlackHole-$VERSION.dmg.sha256" \
-            --title "Black Hole $VERSION" --generate-notes
+          ASSETS=("dist/BlackHole-$VERSION.dmg" "dist/BlackHole-$VERSION.dmg.sha256")
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            # Release was created by hand; attach the CI-built DMG to it.
+            gh release upload "$GITHUB_REF_NAME" "${ASSETS[@]}" --clobber
+          else
+            gh release create "$GITHUB_REF_NAME" "${ASSETS[@]}" \
+              --title "Black Hole $VERSION" --generate-notes
+          fi

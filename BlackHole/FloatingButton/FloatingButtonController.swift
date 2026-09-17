@@ -302,81 +302,64 @@ struct FloatingButtonView: View {
     @Environment(FocusEngine.self) private var focus
     @Environment(NotchViewModel.self) private var notch
     @Environment(MascotMoodCenter.self) private var mascot
-
-    private static let ringGradient = AngularGradient(
-        colors: [Color(hex: 0xFFB36B), Color(hex: 0xFF5E7E), Color(hex: 0xA77BF3), Color(hex: 0x62B6FF), Color(hex: 0xFFB36B)],
-        center: .center)
+    /// Holey briefly peeks out of the black hole every so often.
+    @State private var peeking = false
 
     var body: some View {
         let size = FloatingButtonController.buttonSize
-        let mood = mascot.mood(focusRunning: focus.phase == .running)
         let active = state.hovering || notch.isFloatingOpen
 
-        ZStack {
-            // A little round window into space with Holey inside.
-            Circle()
-                .fill(RadialGradient(colors: [Color(hex: 0x3A2A63), Color(hex: 0x150F2A), Color(hex: 0x07060D)],
-                                     center: UnitPoint(x: 0.5, y: 0.35), startRadius: 2, endRadius: size * 0.62))
-                .overlay(StarField(size: size).clipShape(Circle()).opacity(0.8))
-                .overlay(
-                    Mascot(size: size * 0.98, blinks: true, lookUp: active, mood: mood)
-                        .offset(y: -size * 0.01)
-                )
-                .clipShape(Circle())
-                // Glassy rim: brighter at the top like light catching an edge.
-                .overlay(
-                    Circle().strokeBorder(
-                        LinearGradient(colors: [.white.opacity(0.45), .white.opacity(0.08), .white.opacity(0.2)],
-                                       startPoint: .top, endPoint: .bottom),
-                        lineWidth: 1)
-                )
-
-            if focus.isActive {
-                TimelineView(.periodic(from: .now, by: 1)) { context in
-                    let progress = focus.targetSec == nil ? 1 : focus.progress(at: context.date)
-                    ZStack(alignment: .bottom) {
-                        Circle()
-                            .trim(from: 0, to: progress)
-                            .stroke(Self.ringGradient, style: StrokeStyle(lineWidth: 3, lineCap: .round))
-                            .rotationEffect(.degrees(-90))
-                            .opacity(focus.phase == .running ? 1 : 0.5)
-                            .animation(.linear(duration: 1), value: progress)
-                            .padding(-2.5)
-                        Group {
-                            if focus.phase == .paused {
-                                Image(systemName: "pause.fill").font(.system(size: 6.5, weight: .black))
-                            } else {
-                                Text("\(focus.displaySeconds(at: context.date) / 60)m")
-                                    .font(.system(size: 8.5, weight: .heavy, design: .rounded).monospacedDigit())
-                            }
-                        }
-                        .foregroundStyle(Palette.ink)
-                        .padding(.horizontal, 5)
-                        .frame(height: 13)
-                        .background(Capsule().fill(Color(hex: 0xFFD7A8)))
-                        .offset(y: 7)
-                    }
-                }
-            }
+        TimelineView(.periodic(from: .now, by: 1)) { context in
+            let timerOn = focus.isActive && focus.phase != .finished
+            FloatingOrb(
+                size: size,
+                time: timerOn ? Self.clock(focus.displaySeconds(at: context.date)) : nil,
+                progress: timerOn ? focus.targetSec.map { _ in focus.progress(at: context.date) } : nil,
+                paused: focus.phase == .paused,
+                finished: focus.phase == .finished,
+                face: face(timerOn: timerOn, active: active),
+                highlighted: active || mascot.isCelebrating
+            )
         }
-        .frame(width: size, height: size)
-        // Soft violet glow that brightens on hover.
-        .shadow(color: Color(hex: 0x8B5CF6).opacity(active ? 0.75 : 0.35), radius: active ? 12 : 7)
-        .shadow(color: .black.opacity(0.35), radius: 6, y: 3)
+        .shadow(color: .black.opacity(0.3), radius: 7, y: 3)
         .keyframeAnimator(initialValue: 1.0, trigger: mascot.celebrationCount) { content, scale in
             content.scaleEffect(scale)
         } keyframes: { _ in
-            SpringKeyframe(1.3, duration: 0.18)
-            SpringKeyframe(0.94, duration: 0.14)
+            SpringKeyframe(1.25, duration: 0.18)
+            SpringKeyframe(0.95, duration: 0.14)
             SpringKeyframe(1.0, duration: 0.3)
         }
         .scaleEffect(state.pressed ? 0.9 : state.hovering ? 1.08 : 1)
-        .opacity(state.idle && !active && !focus.isActive && !mascot.isCelebrating ? 0.55 : 1)
+        .opacity(state.idle && !active && !focus.isActive && !mascot.isCelebrating && !peeking ? 0.6 : 1)
         .animation(.spring(duration: 0.25, bounce: 0.3), value: state.pressed)
         .animation(.spring(duration: 0.35, bounce: 0.35), value: state.hovering)
         .animation(.easeInOut(duration: 0.5), value: state.idle)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .environment(\.colorScheme, .dark)
         .help("Black Hole: click to open, drag to move, right-click for more")
+        .task {
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(Double.random(in: 25...50)))
+                guard !focus.isActive, !mascot.isSleepy, !state.hovering else { continue }
+                withAnimation { peeking = true }
+                try? await Task.sleep(for: .seconds(2.2))
+                withAnimation { peeking = false }
+            }
+        }
+    }
+
+    private func face(timerOn: Bool, active: Bool) -> FloatingOrb.Face {
+        if mascot.isCelebrating { return .happy }
+        if timerOn { return .none }
+        if active { return .curious }
+        if mascot.isSleepy { return .sleepy }
+        return peeking ? .peek : .none
+    }
+
+    /// "24:31" under an hour, "1:05" (hours:minutes) above, so it always fits inside the orb.
+    static func clock(_ seconds: Int) -> String {
+        let s = max(0, seconds)
+        if s >= 3600 { return String(format: "%d:%02d", s / 3600, (s % 3600) / 60) }
+        return String(format: "%02d:%02d", s / 60, s % 60)
     }
 }

@@ -17,8 +17,6 @@ final class NotchViewModel {
 
     /// The same workspace, opened beside the floating button on whatever screen it's on.
     private(set) var isFloatingOpen = false
-    /// Whether the floating workspace's content is in the view tree (stays true through the close animation).
-    var isFloatingMounted = false
     /// Which way the floating workspace opens from the button, so it can grow out of it.
     var floatingOpensLeft = true
     @ObservationIgnored private(set) var floatingAnchor: NSRect = .zero
@@ -29,8 +27,9 @@ final class NotchViewModel {
     /// Fires whenever the workspace is opened from anywhere.
     @ObservationIgnored var onExpansionVisit: (() -> Void)?
 
-    static let expandAnimation = Animation.spring(response: 0.42, dampingFraction: 0.8)
-    static let collapseAnimation = Animation.spring(response: 0.34, dampingFraction: 0.92)
+    /// A touch of bounce on the way out, none on the way back in, like the Dynamic Island.
+    static let expandAnimation = Animation.spring(duration: 0.48, bounce: 0.2)
+    static let collapseAnimation = Animation.spring(duration: 0.34, bounce: 0)
 
     func expand(pinned: Bool = false) {
         closeFloating()

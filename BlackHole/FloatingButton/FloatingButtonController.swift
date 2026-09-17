@@ -303,33 +303,45 @@ struct FloatingButtonView: View {
     @Environment(NotchViewModel.self) private var notch
     @Environment(MascotMoodCenter.self) private var mascot
 
-    private static let corner: CGFloat = 16
+    private static let ringGradient = AngularGradient(
+        colors: [Color(hex: 0xFFB36B), Color(hex: 0xFF5E7E), Color(hex: 0xA77BF3), Color(hex: 0x62B6FF), Color(hex: 0xFFB36B)],
+        center: .center)
 
     var body: some View {
         let size = FloatingButtonController.buttonSize
-        let shape = RoundedRectangle(cornerRadius: Self.corner, style: .continuous)
         let mood = mascot.mood(focusRunning: focus.phase == .running)
+        let active = state.hovering || notch.isFloatingOpen
 
         ZStack {
-            shape
-                .fill(.ultraThinMaterial)
-                .overlay(shape.fill(Color.black.opacity(0.55)))
-                .overlay(shape.strokeBorder(.white.opacity(0.14), lineWidth: 0.5))
-
-            Mascot(size: 58, blinks: true, lookUp: state.hovering || notch.isFloatingOpen, mood: mood)
-                .clipShape(shape)
+            // A little round window into space with Holey inside.
+            Circle()
+                .fill(RadialGradient(colors: [Color(hex: 0x3A2A63), Color(hex: 0x150F2A), Color(hex: 0x07060D)],
+                                     center: UnitPoint(x: 0.5, y: 0.35), startRadius: 2, endRadius: size * 0.62))
+                .overlay(StarField(size: size).clipShape(Circle()).opacity(0.8))
+                .overlay(
+                    Mascot(size: size * 0.98, blinks: true, lookUp: active, mood: mood)
+                        .offset(y: -size * 0.01)
+                )
+                .clipShape(Circle())
+                // Glassy rim: brighter at the top like light catching an edge.
+                .overlay(
+                    Circle().strokeBorder(
+                        LinearGradient(colors: [.white.opacity(0.45), .white.opacity(0.08), .white.opacity(0.2)],
+                                       startPoint: .top, endPoint: .bottom),
+                        lineWidth: 1)
+                )
 
             if focus.isActive {
                 TimelineView(.periodic(from: .now, by: 1)) { context in
                     let progress = focus.targetSec == nil ? 1 : focus.progress(at: context.date)
                     ZStack(alignment: .bottom) {
-                        shape.inset(by: 1.5)
-                            .stroke(.white.opacity(0.15), lineWidth: 2.5)
-                        shape.inset(by: 1.5)
+                        Circle()
                             .trim(from: 0, to: progress)
-                            .stroke(.white.opacity(focus.phase == .running ? 0.95 : 0.5),
-                                    style: StrokeStyle(lineWidth: 2.5, lineCap: .round))
+                            .stroke(Self.ringGradient, style: StrokeStyle(lineWidth: 3, lineCap: .round))
+                            .rotationEffect(.degrees(-90))
+                            .opacity(focus.phase == .running ? 1 : 0.5)
                             .animation(.linear(duration: 1), value: progress)
+                            .padding(-2.5)
                         Group {
                             if focus.phase == .paused {
                                 Image(systemName: "pause.fill").font(.system(size: 6.5, weight: .black))
@@ -339,16 +351,18 @@ struct FloatingButtonView: View {
                             }
                         }
                         .foregroundStyle(Palette.ink)
-                        .padding(.horizontal, 4)
-                        .frame(height: 12)
-                        .background(Capsule().fill(.white))
-                        .offset(y: 5)
+                        .padding(.horizontal, 5)
+                        .frame(height: 13)
+                        .background(Capsule().fill(Color(hex: 0xFFD7A8)))
+                        .offset(y: 7)
                     }
                 }
             }
         }
         .frame(width: size, height: size)
-        .shadow(color: .black.opacity(0.35), radius: 8, y: 3)
+        // Soft violet glow that brightens on hover.
+        .shadow(color: Color(hex: 0x8B5CF6).opacity(active ? 0.75 : 0.35), radius: active ? 12 : 7)
+        .shadow(color: .black.opacity(0.35), radius: 6, y: 3)
         .keyframeAnimator(initialValue: 1.0, trigger: mascot.celebrationCount) { content, scale in
             content.scaleEffect(scale)
         } keyframes: { _ in
@@ -356,10 +370,10 @@ struct FloatingButtonView: View {
             SpringKeyframe(0.94, duration: 0.14)
             SpringKeyframe(1.0, duration: 0.3)
         }
-        .scaleEffect(state.pressed ? 0.9 : state.hovering ? 1.06 : 1)
-        .opacity(state.idle && !state.hovering && !focus.isActive && !notch.isFloatingOpen && !mascot.isCelebrating ? 0.45 : 1)
-        .animation(.spring(response: 0.28, dampingFraction: 0.7), value: state.pressed)
-        .animation(.spring(response: 0.3, dampingFraction: 0.8), value: state.hovering)
+        .scaleEffect(state.pressed ? 0.9 : state.hovering ? 1.08 : 1)
+        .opacity(state.idle && !active && !focus.isActive && !mascot.isCelebrating ? 0.55 : 1)
+        .animation(.spring(duration: 0.25, bounce: 0.3), value: state.pressed)
+        .animation(.spring(duration: 0.35, bounce: 0.35), value: state.hovering)
         .animation(.easeInOut(duration: 0.5), value: state.idle)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .environment(\.colorScheme, .dark)

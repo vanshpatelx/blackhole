@@ -4,42 +4,56 @@ struct NotchRootView: View {
     @Environment(NotchViewModel.self) private var model
     @Environment(FocusEngine.self) private var focus
 
+    /// Width of each side of the timer "island" around the notch.
+    static let islandWing: CGFloat = 78
+
     static func collapsedSize(geometry g: NotchGeometry, timerActive: Bool) -> CGSize {
         if timerActive {
-            return CGSize(width: g.notchSize.width + 36, height: g.notchSize.height + 26)
+            // Dynamic Island style: grow sideways on the notch's own line instead of downward.
+            let notchWidth = g.hasNotch ? g.notchSize.width : 0
+            return CGSize(width: notchWidth + islandWing * 2, height: g.hasNotch ? g.notchSize.height : 30)
         }
         return g.hasNotch ? g.notchSize : CGSize(width: g.notchSize.width, height: 0)
     }
 
     var body: some View {
         let g = model.geometry
-        let size = model.isExpanded ? g.expandedSize : Self.collapsedSize(geometry: g, timerActive: focus.isActive)
-        let visible = model.isExpanded || g.hasNotch || focus.isActive
+        let expanded = model.isExpanded
+        let island = !expanded && focus.isActive
+        let size = expanded ? g.expandedSize : Self.collapsedSize(geometry: g, timerActive: focus.isActive)
+        let visible = expanded || g.hasNotch || focus.isActive
+        let shape = NotchShape(topRadius: expanded ? NotchGeometry.flare : (island ? 9 : 7),
+                               // Concentric with the cards: card radius plus the black border.
+                               bottomRadius: expanded ? Radius.card + NotchGeometry.inset : (island ? 13 : 9))
 
         ZStack(alignment: .top) {
-            NotchShape(topRadius: model.isExpanded ? NotchGeometry.flare : 7,
-                       // Concentric with the cards: card radius plus the black border.
-                       bottomRadius: model.isExpanded ? Radius.card + NotchGeometry.inset : (focus.isActive ? 14 : 9))
-                .fill(Palette.panel)
-                .shadow(color: .black.opacity(model.isExpanded ? 0.45 : 0), radius: 18, y: 8)
+            shape.fill(Palette.panel)
 
-            if model.isExpanded {
-                ExpandedPanel()
-                    .padding(.horizontal, NotchGeometry.flare + NotchGeometry.inset)
-                    .transition(.asymmetric(
-                        insertion: .opacity.combined(with: .scale(scale: 0.96, anchor: .top)).animation(.easeOut(duration: 0.22).delay(0.06)),
-                        removal: .opacity.animation(.easeIn(duration: 0.1))))
-            } else if focus.isActive {
-                CollapsedTimer()
-                    .frame(height: size.height, alignment: .bottom)
-                    .padding(.bottom, 7)
-                    .transition(.opacity.animation(.easeOut(duration: 0.18)))
+            // Kept in the tree while collapsed so opening never has to build every card mid-animation.
+            ExpandedPanel()
+                .padding(.horizontal, NotchGeometry.flare + NotchGeometry.inset)
+                .frame(width: g.expandedSize.width, height: g.expandedSize.height, alignment: .top)
+                .compositingGroup()
+                .scaleEffect(expanded ? 1 : 0.9, anchor: .top)
+                .opacity(expanded ? 1 : 0)
+                .animation(expanded ? .smooth(duration: 0.34).delay(0.06) : .easeOut(duration: 0.12), value: expanded)
+                .allowsHitTesting(expanded)
+                .accessibilityHidden(!expanded)
+
+            if focus.isActive {
+                IslandTimer(notchWidth: g.hasNotch ? g.notchSize.width : 0,
+                            height: Self.collapsedSize(geometry: g, timerActive: true).height)
+                    .opacity(island ? 1 : 0)
+                    .animation(island ? .smooth(duration: 0.3).delay(0.14) : .easeOut(duration: 0.1), value: island)
+                    .allowsHitTesting(false)
             }
         }
         .frame(width: size.width, height: size.height, alignment: .top)
+        // The black shape reveals the content as it grows, like the Dynamic Island.
+        .clipShape(shape)
         .opacity(visible ? 1 : 0)
         .overlay {
-            if !model.isExpanded && focus.isActive {
+            if island {
                 Color.clear
                     .contentShape(Rectangle())
                     .onTapGesture { model.expand(pinned: true) }
@@ -50,21 +64,82 @@ struct NotchRootView: View {
     }
 }
 
-/// Countdown shown under the camera while a focus session runs and the panel is closed.
-private struct CollapsedTimer: View {
+/// Live focus timer in the notch's row: progress ring on the left, time on the right.
+private struct IslandTimer: View {
+    let notchWidth: CGFloat
+    let height: CGFloat
     @Environment(FocusEngine.self) private var focus
+
+    private static let accent = Color(hex: 0xFFB36B)
+    private static let done = Color(hex: 0x4ADE80)
 
     var body: some View {
         TimelineView(.periodic(from: .now, by: 1)) { context in
-            HStack(spacing: 6) {
-                if focus.phase == .paused {
-                    Image(systemName: "pause.fill").font(.system(size: 7, weight: .bold)).foregroundStyle(.white.opacity(0.6))
+            let seconds = focus.displaySeconds(at: context.date)
+            let wing = NotchRootView.islandWing
+
+            HStack(spacing: 0) {
+                IslandRing(progress: focus.targetSec == nil ? nil : focus.progress(at: context.date), phase: focus.phase)
+                    .frame(width: 17, height: 17)
+                    .padding(.leading, 14)
+                    .frame(width: wing, alignment: .leading)
+
+                Color.clear.frame(width: notchWidth)
+
+                Group {
+                    if focus.phase == .finished {
+                        Text("Done")
+                            .foregroundStyle(Self.done)
+                            .modifier(FinishedPulse(active: true))
+                    } else {
+                        Text(DotMatrixText.format(seconds: seconds))
+                            .foregroundStyle(focus.phase == .running ? Self.accent : .white.opacity(0.5))
+                            .contentTransition(.numericText(countsDown: focus.targetSec != nil))
+                            .animation(.snappy(duration: 0.3), value: seconds)
+                    }
                 }
-                DotMatrixText(text: DotMatrixText.format(seconds: focus.displaySeconds(at: context.date)),
-                              dot: 1.7, spacing: 0.8,
-                              color: .white.opacity(focus.phase == .running ? 0.95 : 0.55))
+                .font(.system(size: 14, weight: .semibold, design: .rounded).monospacedDigit())
+                .lineLimit(1)
+                .fixedSize()
+                .padding(.trailing, 14)
+                .frame(width: wing, alignment: .trailing)
             }
-            .modifier(FinishedPulse(active: focus.phase == .finished))
+            .frame(height: height)
+        }
+    }
+}
+
+private struct IslandRing: View {
+    /// `nil` for a stopwatch, which shows a slowly spinning arc instead of progress.
+    let progress: Double?
+    let phase: FocusEngine.Phase
+    @State private var spin = false
+
+    private static let gradient = AngularGradient(
+        colors: [Color(hex: 0xFFB36B), Color(hex: 0xFF5E7E), Color(hex: 0xA77BF3), Color(hex: 0x62B6FF), Color(hex: 0xFFB36B)],
+        center: .center)
+
+    var body: some View {
+        ZStack {
+            Circle().stroke(.white.opacity(0.16), lineWidth: 2.6)
+            if phase == .finished {
+                Circle().stroke(Color(hex: 0x4ADE80), lineWidth: 2.6)
+                Image(systemName: "checkmark").font(.system(size: 7, weight: .black)).foregroundStyle(Color(hex: 0x4ADE80))
+            } else {
+                Circle()
+                    .trim(from: 0, to: progress ?? 0.28)
+                    .stroke(Self.gradient, style: StrokeStyle(lineWidth: 2.6, lineCap: .round))
+                    .rotationEffect(.degrees(progress == nil ? (spin ? 270 : -90) : -90))
+                    .opacity(phase == .paused ? 0.45 : 1)
+                    .animation(.linear(duration: 1), value: progress)
+                if phase == .paused {
+                    Image(systemName: "pause.fill").font(.system(size: 6.5, weight: .black)).foregroundStyle(.white.opacity(0.7))
+                }
+            }
+        }
+        .onAppear {
+            guard progress == nil else { return }
+            withAnimation(.linear(duration: 1.6).repeatForever(autoreverses: false)) { spin = true }
         }
     }
 }
@@ -75,7 +150,7 @@ private struct FinishedPulse: ViewModifier {
 
     func body(content: Content) -> some View {
         content
-            .opacity(active && dim ? 0.3 : 1)
+            .opacity(active && dim ? 0.35 : 1)
             .onChange(of: active, initial: true) { _, on in
                 dim = false
                 guard on else { return }

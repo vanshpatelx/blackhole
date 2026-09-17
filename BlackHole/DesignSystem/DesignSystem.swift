@@ -85,6 +85,8 @@ struct Card<Content: View>: View {
                 RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
                     .fill(tint)
                     .overlay(GrainOverlay().clipShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous)))
+                    // Flatten the grain blend into one GPU layer so open/close animations stay smooth.
+                    .drawingGroup()
             }
             .foregroundStyle(Palette.ink)
     }

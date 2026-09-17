@@ -73,7 +73,6 @@ final class FloatingWorkspaceController {
 
         panel.setFrame(NSRect(x: x, y: y, width: size.width, height: size.height), display: false)
         model.floatingOpensLeft = opensLeft
-        model.isFloatingMounted = true
         panel.allowsKey = true
         panel.orderFrontRegardless()
         panel.makeKey()
@@ -88,11 +87,10 @@ final class FloatingWorkspaceController {
                 guard let self, !self.model.isFloatingOpen else { return }
                 self.panel.allowsKey = false
                 self.panel.orderOut(nil)
-                self.model.isFloatingMounted = false
             }
         }
         unmountWork = work
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.22, execute: work)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2, execute: work)
     }
 }
 
@@ -102,35 +100,29 @@ private struct FloatingWorkspaceRoot: View {
 
     var body: some View {
         let radius = Radius.card + NotchGeometry.inset
+        let shape = RoundedRectangle(cornerRadius: radius, style: .continuous)
 
-        ZStack {
-            if model.isFloatingMounted {
-                ExpandedPanel(placement: .floating)
-                    .padding(.horizontal, NotchGeometry.inset)
-                    .background(
-                        RoundedRectangle(cornerRadius: radius, style: .continuous)
-                            .fill(Palette.panel)
-                            .overlay(RoundedRectangle(cornerRadius: radius, style: .continuous)
-                                .strokeBorder(.white.opacity(0.1), lineWidth: 0.5))
-                    )
-                    .clipShape(RoundedRectangle(cornerRadius: radius, style: .continuous))
-                    // Grow out of the side facing the button.
-                    .scaleEffect(shown ? 1 : 0.92, anchor: model.floatingOpensLeft ? .trailing : .leading)
-                    .opacity(shown ? 1 : 0)
+        // Built once at launch and only shown/hidden, so opening never waits on view creation.
+        ExpandedPanel(placement: .floating)
+            .padding(.horizontal, NotchGeometry.inset)
+            .background(shape.fill(Palette.panel).overlay(shape.strokeBorder(.white.opacity(0.1), lineWidth: 0.5)))
+            .clipShape(shape)
+            .compositingGroup()
+            // Grow out of the side facing the button.
+            .scaleEffect(shown ? 1 : 0.9, anchor: model.floatingOpensLeft ? .trailing : .leading)
+            .opacity(shown ? 1 : 0)
+            .allowsHitTesting(shown)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .preferredColorScheme(.dark)
+            .onChange(of: model.isFloatingOpen) { _, open in
+                if open {
+                    // Wait one runloop so the window is on screen before the spring starts.
+                    DispatchQueue.main.async {
+                        withAnimation(NotchViewModel.expandAnimation) { shown = model.isFloatingOpen }
+                    }
+                } else {
+                    withAnimation(.easeIn(duration: 0.15)) { shown = false }
+                }
             }
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .preferredColorScheme(.dark)
-        .onChange(of: model.isFloatingOpen) { _, open in
-            guard model.isFloatingMounted else { return }
-            withAnimation(open ? NotchViewModel.expandAnimation : .easeIn(duration: 0.16)) { shown = open }
-        }
-        .onChange(of: model.isFloatingMounted) { _, mounted in
-            guard mounted else { shown = false; return }
-            // Let the content land in the tree first so the grow-in actually animates.
-            DispatchQueue.main.async {
-                withAnimation(NotchViewModel.expandAnimation) { shown = model.isFloatingOpen }
-            }
-        }
     }
 }

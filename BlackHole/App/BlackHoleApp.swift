@@ -32,8 +32,24 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         floatingWorkspaceController = FloatingWorkspaceController(services: services)
         floatingButtonController = FloatingButtonController(services: services)
 
-        // `-openWorkspace YES` (or `insights` / `settings` via `-openTab`) opens the panel on launch; handy for UI work.
         let args = UserDefaults.standard
+        // `-startFocus 25` starts a focus session of that many minutes on launch (0 = stopwatch).
+        if args.object(forKey: "startFocus") != nil {
+            let minutes = args.integer(forKey: "startFocus")
+            services.focus.start(targetSec: minutes > 0 ? minutes * 60 : nil)
+        }
+        #if DEBUG
+        // `-animationLoop YES` opens and closes the notch every 1.6s, for checking animation smoothness.
+        if args.bool(forKey: "animationLoop") {
+            Timer.scheduledTimer(withTimeInterval: 1.6, repeats: true) { _ in
+                MainActor.assumeIsolated {
+                    services.notch.isExpanded ? services.notch.collapse() : services.notch.expand(pinned: true)
+                }
+            }
+        }
+        #endif
+
+        // `-openWorkspace YES` (or `insights` / `settings` via `-openTab`) opens the panel on launch; handy for UI work.
         if args.bool(forKey: "openWorkspace") {
             if let tab = args.string(forKey: "openTab").flatMap({ NotchViewModel.Tab(rawValue: $0.capitalized) }) {
                 services.notch.tab = tab

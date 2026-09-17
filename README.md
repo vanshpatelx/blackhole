@@ -28,7 +28,7 @@ It's free, open source, and your data never leaves your Mac.
 ## Features
 
 - **Today's tasks**: add, check off, drag to reorder, set time limits and reminders, move to tomorrow. Unfinished tasks roll over to the next day on their own.
-- **Focus timer**: countdown or stopwatch with pause, resume and +5 minutes. While it runs, the time stays visible in the notch. It pauses when your Mac sleeps.
+- **Focus timer**: countdown or stopwatch with pause, resume and +5 minutes. While it runs, the notch becomes a live island: a progress ring on one side and the countdown on the other. It pauses when your Mac sleeps.
 - **Daily notepad**: saves as you type. Put the cursor on a line and press <kbd>⌘</kbd><kbd>↩</kbd> to turn it into a task.
 - **Events from all your calendars**: iCloud, Google (as many accounts as you like), Outlook/Exchange and subscribed calendars, color-coded and read-only. Pick which calendars show in **Settings → Calendars**.
 - **Insights**: focus time, completed vs. planned tasks, active days and your streak over the last week.

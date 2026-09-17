@@ -286,7 +286,7 @@ struct MascotTile: View {
     }
 }
 
-private struct StarField: View {
+struct StarField: View {
     var size: CGFloat
 
     // Fixed positions so the icon renders identically every time.

@@ -23,6 +23,8 @@ Pass these after `--args` when opening the app, or set them in the Xcode scheme:
 | `-openWorkspace YES` | Open the workspace on launch |
 | `-openTab insights` | Pick the tab to open (`workspace`, `insights`, `settings`) |
 | `-openFloating YES` | Open the workspace from the floating button instead of the notch |
+| `-startFocus 25` | Start a focus session of that many minutes on launch (`0` for a stopwatch) |
+| `-animationLoop YES` | Debug builds only: open and close the notch every 1.6s to check animation smoothness |
 
 ## Making changes
 

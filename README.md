@@ -78,12 +78,25 @@ Black Hole reads calendars through macOS, so add your accounts there once:
 
 Black Hole has a built-in [Model Context Protocol](https://modelcontextprotocol.io) server. It's off by default and only listens on `127.0.0.1`, protected by a token.
 
-1. Open **Settings → AI & Data** and turn on **MCP server**.
+1. Open **Settings → AI Assistants** and turn on **MCP server**.
 2. Click **Copy setup for…** and pick your client:
    - **Claude Code**: paste the copied `claude mcp add …` command into your terminal.
    - **Cursor**: paste the JSON into `~/.cursor/mcp.json`.
    - **Claude Desktop**: paste the JSON into `~/Library/Application Support/Claude/claude_desktop_config.json`. It uses the bundled `blackhole-mcp` command, which launches Black Hole if it isn't running.
 3. Ask things like *"add my three most urgent GitHub issues to today"*, *"start a 45-minute focus session on the launch post"* or *"what did I focus on this week?"*
+
+### claude.ai, ChatGPT and other web apps (remote access)
+
+Cloud-hosted assistants run on their own servers, so they can't reach `127.0.0.1` on your Mac. Black Hole can open a secure public tunnel for them using Cloudflare's free quick tunnels (no account needed):
+
+1. Install the tunnel client once: `brew install cloudflared`.
+2. In **Settings → AI Assistants**, turn on **Remote access** and click **Copy connector URL**.
+3. Paste the URL into **claude.ai → Settings → Connectors → Add custom connector** (no authentication), or into a ChatGPT connector (developer mode, no authentication).
+
+Good to know:
+- The connector URL contains your secret token, so **anyone with the URL can use your planner**. Treat it like a password; **Reset Access Token** in the **Copy setup for…** menu revokes it.
+- Quick tunnel URLs change each time the tunnel restarts. Update the connector if Black Hole was restarted. For a permanent URL, point your own [named Cloudflare Tunnel](https://developers.cloudflare.com/cloudflare-one/networks/connectors/cloudflare-tunnel/), ngrok domain or Tailscale Funnel at `http://127.0.0.1:52321` and use `https://your-domain/mcp/<token>`.
+- The tunnel only runs while Black Hole is open and Remote access is on.
 
 | Tool | What it does |
 |---|---|
@@ -95,7 +108,7 @@ Black Hole has a built-in [Model Context Protocol](https://modelcontextprotocol.
 
 ## Privacy
 
-Everything is stored locally in `~/Library/Application Support/Black Hole/`. There are no accounts, analytics or outgoing network calls. The optional MCP server only accepts connections from this Mac. Calendar access is optional and read-only: Black Hole never creates, edits or deletes events. You can export everything as JSON from **Settings → Data**.
+Everything is stored locally in `~/Library/Application Support/Black Hole/`. There are no accounts, analytics or outgoing network calls. The optional MCP server only accepts connections from this Mac, unless you turn on **Remote access**, which opens a token-protected Cloudflare tunnel until you turn it off. Calendar access is optional and read-only: Black Hole never creates, edits or deletes events. You can export everything as JSON from **Settings → Data**.
 
 ## Build from source
 

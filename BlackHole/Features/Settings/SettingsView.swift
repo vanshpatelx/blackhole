@@ -66,21 +66,9 @@ struct SettingsView: View {
 
             Card(tint: Palette.notepad) {
                 VStack(alignment: .leading, spacing: 9) {
-                    CardHeader(icon: "sparkles", title: "AI & Data")
+                    CardHeader(icon: "sparkles", title: "AI Assistants")
                     MCPSettings()
-                    Rectangle().fill(Palette.inkTertiary.opacity(0.5)).frame(height: 0.5)
-                    HStack {
-                        Text("Stored only on this Mac")
-                            .font(.system(size: 11))
-                            .foregroundStyle(Palette.inkSecondary)
-                        Spacer()
-                        Button("Export…", action: exportBackup)
-                            .buttonStyle(.plain)
-                            .font(.system(size: 11, weight: .semibold))
-                    }
-                    if let exportMessage {
-                        Text(exportMessage).font(.system(size: 10, weight: .medium))
-                    }
+                    Spacer(minLength: 0)
                 }
             }
 
@@ -100,6 +88,14 @@ struct SettingsView: View {
                         }
                     }
                     Spacer()
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text("Your data stays on this Mac")
+                            .font(.system(size: 10.5))
+                            .foregroundStyle(Palette.inkSecondary)
+                        Button(exportMessage ?? "Export backup…", action: exportBackup)
+                            .buttonStyle(.plain)
+                            .font(.system(size: 11, weight: .semibold))
+                    }
                     Button("Quit Black Hole") { NSApp.terminate(nil) }.buttonStyle(PillButtonStyle())
                 }
             }
@@ -250,6 +246,8 @@ private struct MCPSettings: View {
                         .frame(height: 26)
                         .background(RoundedRectangle(cornerRadius: Radius.pill, style: .continuous).fill(Palette.ink))
                 }
+
+                RemoteAccessRow()
             }
         }
     }
@@ -275,5 +273,72 @@ private struct MCPSettings: View {
         NSPasteboard.general.setString(mcp.snippet(for: client), forType: .string)
         withAnimation { copied = client }
         DispatchQueue.main.asyncAfter(deadline: .now() + 2) { withAnimation { copied = nil } }
+    }
+}
+
+/// Public tunnel for cloud AI apps (claude.ai, ChatGPT) that can't reach 127.0.0.1.
+private struct RemoteAccessRow: View {
+    @Environment(MCPServer.self) private var mcp
+    @State private var copied = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Rectangle().fill(Palette.inkTertiary.opacity(0.5)).frame(height: 0.5)
+            Toggle(isOn: Binding(get: { mcp.tunnel.state != .off }, set: { mcp.setRemoteAccess($0) })) {
+                VStack(alignment: .leading, spacing: 1) {
+                    Text("Remote access").font(.system(size: 12, weight: .medium))
+                    Text("For claude.ai, ChatGPT and other web apps")
+                        .font(.system(size: 10.5))
+                        .foregroundStyle(Palette.inkSecondary)
+                }
+            }
+            .toggleStyle(.switch)
+            .controlSize(.mini)
+            .tint(Palette.ink)
+
+            switch mcp.tunnel.state {
+            case .off:
+                EmptyView()
+            case .notInstalled:
+                Button {
+                    NSPasteboard.general.clearContents()
+                    NSPasteboard.general.setString("brew install cloudflared", forType: .string)
+                    copied = true
+                } label: {
+                    Text(copied ? "Copied: run it in Terminal, then toggle again" : "Needs cloudflared · Copy install command")
+                        .font(.system(size: 10.5, weight: .semibold))
+                        .multilineTextAlignment(.leading)
+                }
+                .buttonStyle(.plain)
+            case .starting:
+                Label("Opening tunnel…", systemImage: "arrow.triangle.2.circlepath")
+                    .labelStyle(CompactLabelStyle())
+                    .font(.system(size: 10.5, weight: .medium))
+                    .foregroundStyle(Palette.inkSecondary)
+            case .failed(let reason):
+                Text(reason)
+                    .font(.system(size: 10.5, weight: .medium))
+                    .foregroundStyle(Color(hex: 0xC92A2A))
+                    .lineLimit(2)
+            case .running:
+                Button {
+                    guard let url = mcp.connectorURL else { return }
+                    NSPasteboard.general.clearContents()
+                    NSPasteboard.general.setString(url.absoluteString, forType: .string)
+                    withAnimation { copied = true }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 2) { withAnimation { copied = false } }
+                } label: {
+                    Label(copied ? "Copied connector URL" : "Copy connector URL", systemImage: copied ? "checkmark" : "link")
+                        .labelStyle(CompactLabelStyle())
+                        .font(.system(size: 11.5, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 11)
+                        .frame(height: 26)
+                        .background(RoundedRectangle(cornerRadius: Radius.pill, style: .continuous).fill(Palette.ink))
+                }
+                .buttonStyle(.plain)
+                .help("Paste into claude.ai → Settings → Connectors, or ChatGPT connectors. Anyone with this URL can use your planner.")
+            }
+        }
     }
 }

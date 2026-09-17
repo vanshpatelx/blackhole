@@ -54,6 +54,14 @@ Black Hole runs a local MCP server. Any MCP client on the Mac can then work with
 - **Settings → Integrations → MCP**: an on/off switch (off by default), "Copy config for Claude Desktop / Cursor / Claude Code", and "Regenerate token".
 - Planned: mark writes made through MCP in the UI (a small ✦ on the task) so you can see what an assistant changed.
 
+### Remote access for cloud assistants (v0.2.1)
+
+claude.ai and ChatGPT connectors call MCP from their own servers and can't reach `127.0.0.1`, and they generally can't send custom headers. **Remote access** covers both:
+- Black Hole runs the user's `cloudflared` as a quick tunnel (`cloudflared tunnel --url http://127.0.0.1:<port>`), shows the `trycloudflare.com` URL, and restarts it if it drops.
+- Connectors authenticate with the token in the path: `https://<tunnel>/mcp/<token>`. The local endpoint keeps the `Authorization: Bearer` header.
+- Tunnel requests (identified by Cloudflare's `CF-Connecting-IP`) are refused whenever Remote access is off. The process is stopped on quit, and a stray one from a crash is cleaned up on the next launch.
+- Later: OAuth for connectors, per-tool permissions for remote callers (for example read-only), and stable URLs through a named tunnel on the user's own domain.
+
 ### 1B. MCP task sources (later)
 
 Black Hole as an MCP **client**: connect other MCP servers (GitHub, Linear, Notion, Jira) and pull their items into an **Inbox** you can drag into today. Mapping arbitrary tools to tasks is fragile, so this ships per source with an explicit mapping (which tool, which fields), starting with GitHub Issues.

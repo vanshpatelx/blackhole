@@ -14,6 +14,8 @@ final class NotchViewModel {
     /// Opened with the hotkey: stays open until dismissed instead of closing when the mouse leaves.
     private(set) var isPinned = false
     var tab: Tab = .workspace
+    /// Selected tab in the full dashboard window.
+    var dashboardTab: Tab = .workspace
 
     /// The same workspace, opened beside the floating button on whatever screen it's on.
     private(set) var isFloatingOpen = false

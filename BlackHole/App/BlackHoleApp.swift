@@ -49,6 +49,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         #endif
 
+        // `-openDashboard settings` opens the full window on that tab; it stays open when you click elsewhere.
+        if let tab = args.string(forKey: "openDashboard").flatMap({ NotchViewModel.Tab(rawValue: $0.capitalized) }) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in self?.dashboard.show(tab: tab) }
+        }
+
         // `-openWorkspace YES` (or `insights` / `settings` via `-openTab`) opens the panel on launch; handy for UI work.
         if args.bool(forKey: "openWorkspace") {
             if let tab = args.string(forKey: "openTab").flatMap({ NotchViewModel.Tab(rawValue: $0.capitalized) }) {

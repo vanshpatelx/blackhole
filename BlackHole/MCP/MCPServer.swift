@@ -51,6 +51,9 @@ final class MCPServer {
     private(set) var state: State = .off
     private(set) var config: MCPConfig
 
+    /// Public tunnel for cloud-hosted AI apps.
+    let tunnel = MCPTunnel()
+
     @ObservationIgnored private let router: MCPRouter
     @ObservationIgnored private var listener: NWListener?
     @ObservationIgnored private let queue = DispatchQueue(label: "app.getblackhole.mcp")
@@ -64,19 +67,40 @@ final class MCPServer {
             token: stored?.token ?? MCPConfig.newToken())
         guard allowStart else { return }
         config.save()
-        if config.enabled { start() }
+        if config.enabled {
+            start()
+            if MCPTunnel.isEnabled { tunnel.start(localPort: config.port) }
+        }
     }
+
+    func setRemoteAccess(_ on: Bool) {
+        on ? tunnel.start(localPort: config.port) : tunnel.stop(disable: true)
+    }
+
+    /// Public URL to paste into claude.ai or ChatGPT connectors, when the tunnel is up.
+    var connectorURL: URL? { tunnel.connectorURL(token: config.token) }
 
     func setEnabled(_ enabled: Bool) {
         UserDefaults.standard.set(enabled, forKey: MCPConfig.enabledKey)
         config.enabled = enabled
         config.save()
-        enabled ? start() : stop()
+        if enabled {
+            start()
+            if MCPTunnel.isEnabled { tunnel.start(localPort: config.port) }
+        } else {
+            stop()
+            tunnel.stop()
+        }
     }
 
     func regenerateToken() {
         config.token = MCPConfig.newToken()
         config.save()
+    }
+
+    /// Stops the tunnel process; call when the app quits.
+    func shutdown() {
+        tunnel.stop()
     }
 
     /// Path of the stdio bridge inside the app bundle.
@@ -139,6 +163,8 @@ final class MCPServer {
                         if self.config.port != port {
                             self.config.port = port
                             self.config.save()
+                            // The tunnel must point at the port we actually got.
+                            if MCPTunnel.isEnabled { self.tunnel.start(localPort: port) }
                         }
                         self.state = .running(port: port)
                     case .failed(let error), .waiting(let error):
@@ -195,15 +221,29 @@ final class MCPServer {
     }
 
     private func respond(to request: HTTPRequest) -> HTTPResponse {
+        // Requests relayed by the Cloudflare tunnel carry this header; browsers on this Mac can't forge it
+        // without a CORS preflight we never answer.
+        let viaTunnel = request.headers["cf-connecting-ip"] != nil
         // Browsers send Origin; only allow local pages so a website can't drive the user's planner.
-        if let origin = request.headers["origin"], !(origin.hasPrefix("http://localhost") || origin.hasPrefix("http://127.0.0.1")) {
+        if !viaTunnel, let origin = request.headers["origin"], !(origin.hasPrefix("http://localhost") || origin.hasPrefix("http://127.0.0.1")) {
             return HTTPResponse(status: 403, body: Data("Forbidden origin".utf8))
         }
-        guard request.path == "/mcp" || request.path.hasPrefix("/mcp?") else {
+        let path = request.path.split(separator: "?", maxSplits: 1).first.map(String.init) ?? request.path
+        let authorized: Bool
+        switch path {
+        case "/mcp":
+            authorized = request.headers["authorization"] == "Bearer \(config.token)"
+        case "/mcp/\(config.token)":
+            // Token in the path, for connectors that can't send headers (claude.ai, ChatGPT).
+            authorized = true
+        default:
             return HTTPResponse(status: 404, body: Data("Not found".utf8))
         }
-        guard request.headers["authorization"] == "Bearer \(config.token)" else {
+        guard authorized else {
             return HTTPResponse(status: 401, body: Data("Missing or invalid token. Copy the config from Black Hole Settings.".utf8))
+        }
+        guard !viaTunnel || tunnel.isActive else {
+            return HTTPResponse(status: 403, body: Data("Remote access is off in Black Hole Settings.".utf8))
         }
         switch request.method {
         case "POST":

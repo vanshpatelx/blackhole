@@ -23,6 +23,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var floatingButtonController: FloatingButtonController?
     private var floatingWorkspaceController: FloatingWorkspaceController?
 
+    func applicationWillTerminate(_ notification: Notification) {
+        guard NSClassFromString("XCTestCase") == nil else { return }
+        AppServices.shared.mcp.shutdown()
+    }
+
     func applicationDidFinishLaunching(_ notification: Notification) {
         // Unit tests host inside the app; don't put a panel over the test runner's screen.
         guard NSClassFromString("XCTestCase") == nil else { return }

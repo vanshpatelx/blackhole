@@ -312,15 +312,33 @@ final class MCPServer {
         return difference == 0
     }
 
+    /// The only origins a browser page may carry when it talks to us directly.
+    nonisolated static func loopbackOrigins(port: UInt16) -> Set<String> {
+        ["http://localhost:\(port)", "http://127.0.0.1:\(port)", "http://[::1]:\(port)"]
+    }
+
+    /// True for the `Host` values a client on this Mac produces, and nothing else.
+    nonisolated static func isLoopbackAuthority(_ host: String?, port: UInt16) -> Bool {
+        guard let host = host?.lowercased() else { return false }
+        return ["localhost:\(port)", "127.0.0.1:\(port)", "[::1]:\(port)"].contains(host)
+    }
+
     private func respond(to request: HTTPRequest) -> HTTPResponse {
         // Requests relayed by the Cloudflare tunnel carry this header; browsers on this Mac can't forge it
         // without a CORS preflight we never answer.
         let viaTunnel = request.headers["cf-connecting-ip"] != nil
-        // Browsers send Origin; only allow local pages so a website can't drive the user's planner.
-        if !viaTunnel, let origin = request.headers["origin"],
-           !(origin.hasPrefix("http://localhost") || origin.hasPrefix("http://127.0.0.1"))
-        {
-            return HTTPResponse(status: 403, body: Data("Forbidden origin".utf8))
+        if !viaTunnel {
+            // A name like `localhost.example.com` can be pointed at 127.0.0.1, which would make a
+            // hostile page same-origin with us. Insisting on a loopback Host is what stops that;
+            // the Origin check then keeps other local pages out.
+            guard Self.isLoopbackAuthority(request.headers["host"], port: config.port) else {
+                return HTTPResponse(status: 403, body: Data("Forbidden host".utf8))
+            }
+            if let origin = request.headers["origin"],
+               !Self.loopbackOrigins(port: config.port).contains(origin.lowercased())
+            {
+                return HTTPResponse(status: 403, body: Data("Forbidden origin".utf8))
+            }
         }
         let path = request.path.split(separator: "?", maxSplits: 1).first.map(String.init) ?? request.path
         let authorized: Bool

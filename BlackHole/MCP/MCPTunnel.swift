@@ -218,6 +218,13 @@ final class MCPTunnel {
 
     /// Enrolls once, then runs this Mac's own tunnel for its permanent hostname.
     private func startHosted(localPort: UInt16) {
+        // The hosted tunnel's ingress is fixed to the default port when the address is created, and
+        // the token we hold can't rewrite it. If we ended up on another port, publishing the address
+        // would point it at whatever else holds 52321, so refuse instead.
+        guard localPort == MCPConfig.defaultPort else {
+            state = .failed("Port \(MCPConfig.defaultPort) is in use by another app. Free it and turn AI access on again.")
+            return
+        }
         state = .starting
         Task { @MainActor in
             do {

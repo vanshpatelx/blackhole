@@ -45,12 +45,7 @@
   const wireTask = (row) => {
     row.querySelector('.demo-check').addEventListener('click', () => {
       row.classList.toggle('done');
-      // Slightly stronger bar once the page moves, like a real menu bar over content.
-  const onScroll = () => page.classList.toggle('scrolled', window.scrollY > 8);
-  window.addEventListener('scroll', onScroll, { passive: true });
-  onScroll();
-
-  refreshCount();
+      refreshCount();
     });
   };
 

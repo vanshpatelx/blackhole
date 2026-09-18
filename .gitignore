@@ -14,3 +14,10 @@ xcuserdata/
 
 # Private working notes
 notes/
+
+# wrangler files
+.wrangler
+.dev.vars*
+!.dev.vars.example
+.env*
+!.env.example

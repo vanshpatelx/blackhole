@@ -1,0 +1,652 @@
+/* The site borrows the app's palette: black panel, pastel cards, ink text, film grain. */
+:root {
+  --bg: #06060a;
+  --panel: #000;
+  --text: #f6f4ff;
+  --muted: #a7a2c2;
+  --line: rgba(255, 255, 255, 0.1);
+
+  --tasks: #819f89;
+  --timer: #948bae;
+  --notepad: #a09a5e;
+  --events: #8199ae;
+  --ink: #17171a;
+  --ink-2: rgba(23, 23, 26, 0.6);
+  --ink-3: rgba(23, 23, 26, 0.4);
+
+  --accent: #ffb36b;
+  --radius: 18px;
+  --page: 1120px;
+  --menubar: 44px;
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  padding-top: var(--menubar);
+  position: relative;
+  background:
+    radial-gradient(1100px 520px at 50% -240px, rgba(255, 179, 107, 0.07), transparent 72%),
+    var(--bg);
+  color: var(--text);
+  font: 16px/1.6 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Light spill under the bezel, so the notch silhouette reads against the page. */
+body::after {
+  content: "";
+  position: fixed;
+  top: var(--menubar);
+  left: 50%;
+  width: 640px;
+  height: 200px;
+  transform: translateX(-50%);
+  pointer-events: none;
+  background: radial-gradient(300px 120px at 50% 0%, rgba(255, 179, 107, 0.14), transparent 72%);
+  z-index: 0;
+}
+
+/* A faint star field instead of a coloured haze, echoing the app icon. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    radial-gradient(1.4px 1.4px at 12% 18%, rgba(255, 255, 255, 0.5), transparent 60%),
+    radial-gradient(1.2px 1.2px at 78% 12%, rgba(255, 255, 255, 0.4), transparent 60%),
+    radial-gradient(1.6px 1.6px at 34% 62%, rgba(255, 255, 255, 0.32), transparent 60%),
+    radial-gradient(1.2px 1.2px at 88% 54%, rgba(255, 255, 255, 0.3), transparent 60%),
+    radial-gradient(1.3px 1.3px at 58% 32%, rgba(255, 255, 255, 0.28), transparent 60%),
+    radial-gradient(1.1px 1.1px at 22% 82%, rgba(255, 255, 255, 0.26), transparent 60%),
+    radial-gradient(1.5px 1.5px at 68% 88%, rgba(255, 255, 255, 0.24), transparent 60%);
+  mask-image: linear-gradient(#000 0, #000 55%, transparent 88%);
+  z-index: 0;
+}
+
+main, .menubar, footer { position: relative; z-index: 1; }
+
+img { max-width: 100%; height: auto; }
+a { color: inherit; }
+
+/* Menu bar with a notch, like the top of a MacBook */
+.menubar {
+  position: fixed;
+  inset: 0 0 auto;
+  height: var(--menubar);
+  display: flex;
+  align-items: stretch;
+  /* Solid black, like the bezel of a MacBook display, so the notch is part of it. */
+  background: #000;
+  z-index: 10;
+}
+
+.menubar-left,
+.menubar-right {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 14px;
+  font-size: 13px;
+}
+
+.menubar-right { justify-content: flex-end; }
+
+.menubar-right a {
+  color: rgba(255, 255, 255, 0.72);
+  text-decoration: none;
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-weight: 500;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.menubar-right a:hover { background: rgba(255, 255, 255, 0.1); color: #fff; }
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 5px 10px 5px 6px;
+  border-radius: 9px;
+  font-size: 13.5px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  text-decoration: none;
+  transition: background 0.15s ease;
+}
+
+.brand:hover { background: rgba(255, 255, 255, 0.08); }
+.brand img { border-radius: 6px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5); }
+
+/* The notch: solid black, hanging a little below the bar with the flared corners the app draws. */
+.notch {
+  width: 210px;
+  align-self: flex-start;
+  height: calc(var(--menubar) + 18px);
+  background: #000;
+  border-radius: 0 0 18px 18px;
+  position: relative;
+}
+
+.notch::before,
+.notch::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  width: 14px;
+  height: 14px;
+  background: var(--panel);
+  mask: radial-gradient(14px at 0 14px, transparent 98%, #000);
+}
+
+.notch::before { left: -14px; }
+.notch::after { right: -14px; transform: scaleX(-1); }
+
+.menubar-right .pill {
+  margin-left: 6px;
+  background: linear-gradient(180deg, #ffffff, #e9e6f7);
+  color: #14121c !important;
+  padding: 6px 13px;
+  border-radius: 9px;
+  font-weight: 650;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
+}
+
+.menubar-right .pill:hover { background: #fff; color: #14121c !important; }
+
+/* Layout */
+main { max-width: var(--page); margin: 0 auto; padding: 0 22px 70px; }
+
+section { margin-top: 110px; }
+
+.eyebrow {
+  margin: 0 0 14px;
+  font-size: 12.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+h1 {
+  margin: 0 0 18px;
+  font-size: clamp(38px, 6.6vw, 68px);
+  line-height: 1.03;
+  letter-spacing: -0.035em;
+  font-weight: 700;
+}
+
+.hero { text-align: center; margin-top: 56px; }
+
+.sub {
+  max-width: 520px;
+  margin: 0 auto 28px;
+  font-size: clamp(16px, 2.1vw, 19px);
+  color: var(--muted);
+}
+
+.actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+
+.button {
+  display: inline-block;
+  padding: 13px 22px;
+  border-radius: 12px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: transform 0.15s ease, opacity 0.15s ease;
+}
+
+.button:hover { transform: translateY(-1px); }
+.button.primary { background: var(--text); color: #14121c; }
+.button.ghost { border: 1px solid var(--line); color: var(--text); }
+
+.fine { color: var(--muted); font-size: 13.5px; }
+.hero .fine { margin-top: 16px; }
+
+.shot {
+  display: block;
+  border-radius: var(--radius);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.55);
+}
+
+.hero .shot { margin: 44px auto 0; }
+
+/* Pastel cards, the app's own */
+.cards {
+  display: grid;
+  grid-template-columns: 1.25fr 0.85fr 1fr 1fr;
+  gap: 12px;
+}
+
+.card {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius);
+  padding: 20px;
+  color: var(--ink);
+  display: flex;
+  flex-direction: column;
+  min-height: 250px;
+}
+
+/* Film grain, the same trick the app uses over its card fills */
+.card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/></filter><rect width='120' height='120' filter='url(%23n)' opacity='0.5'/></svg>");
+  mix-blend-mode: overlay;
+  opacity: 0.35;
+  pointer-events: none;
+}
+
+.card.tasks { background: var(--tasks); }
+.card.timer { background: var(--timer); }
+.card.notepad { background: var(--notepad); }
+.card.events { background: var(--events); }
+
+.card h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 12px;
+  font-size: 15px;
+  letter-spacing: -0.01em;
+}
+
+.card .dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 3px;
+  background: var(--ink);
+  opacity: 0.75;
+}
+
+.card p { margin: 0; color: var(--ink-2); font-size: 14.5px; }
+
+.card-foot {
+  margin-top: auto !important;
+  padding-top: 14px;
+  font-size: 12px !important;
+  color: var(--ink-3) !important;
+}
+
+.clock {
+  font-size: 30px !important;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--ink) !important;
+  margin: 4px 0 12px !important;
+  font-variant-numeric: tabular-nums;
+}
+
+kbd {
+  background: rgba(23, 23, 26, 0.12);
+  border-radius: 5px;
+  padding: 1px 5px;
+  font: inherit;
+  font-size: 12.5px;
+}
+
+/* Alternating screenshot rows */
+.split {
+  display: grid;
+  grid-template-columns: 0.8fr 1.2fr;
+  gap: 40px;
+  align-items: center;
+}
+
+.split.reverse .split-copy { order: 2; }
+
+.split h2,
+.panel h2,
+.holey h2,
+.download h2 {
+  margin: 0 0 12px;
+  font-size: clamp(24px, 3.4vw, 34px);
+  letter-spacing: -0.025em;
+}
+
+.split p { margin: 0; color: var(--muted); }
+
+/* Black panel section, like the workspace itself */
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 26px;
+  padding: 44px;
+  text-align: center;
+}
+
+.panel-sub { max-width: 620px; margin: 0 auto 26px; color: var(--muted); }
+
+.prompts {
+  display: grid;
+  gap: 10px;
+  max-width: 620px;
+  margin: 0 auto 20px;
+}
+
+.prompts p {
+  margin: 0;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 12px 16px;
+  text-align: left;
+  font-size: 15px;
+}
+
+/* Mascot */
+.holey {
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr;
+  gap: 36px;
+  align-items: center;
+}
+
+.holey img { border-radius: var(--radius); }
+.holey p { margin: 0; color: var(--muted); }
+
+.download {
+  text-align: center;
+  padding: 56px 24px;
+  border-radius: 26px;
+  border: 1px solid var(--line);
+  background: radial-gradient(760px 340px at 50% 0%, rgba(255, 179, 107, 0.12), transparent 72%), #0d0d12;
+}
+
+.download p { color: var(--muted); margin: 0 auto 22px; max-width: 460px; }
+.download .fine { margin-top: 18px; }
+
+footer {
+  max-width: var(--page);
+  margin: 0 auto;
+  padding: 36px 22px 60px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 14px;
+  border-top: 1px solid var(--line);
+}
+
+footer a { color: var(--muted); text-decoration: none; }
+footer a:hover { color: var(--text); }
+
+@media (max-width: 900px) {
+  .cards { grid-template-columns: repeat(2, 1fr); }
+  .split, .holey { grid-template-columns: 1fr; gap: 24px; }
+  .split.reverse .split-copy { order: 0; }
+  .menubar-right a:not(.pill) { display: none; }
+  .notch { width: 120px; }
+}
+
+@media (max-width: 560px) {
+  .cards { grid-template-columns: 1fr; }
+  .card { min-height: 0; }
+  .panel { padding: 28px 20px; }
+}
+
+/* ---------- The notch demo: the page's own notch opens the workspace ---------- */
+
+.notch { cursor: pointer; }
+
+/* The notch says what it does, until you open it. */
+.notch-label {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-bottom: 14px;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  color: var(--accent);
+  text-shadow: 0 0 14px rgba(255, 179, 107, 0.55);
+  transition: opacity 0.25s ease;
+  animation: notch-pulse 2.6s ease-in-out infinite;
+  pointer-events: none;
+}
+
+body.open .notch-label,
+body.running .notch-label { opacity: 0; animation: none; }
+
+@keyframes notch-pulse {
+  0%, 100% { opacity: 0.78; transform: translateY(0); }
+  50% { opacity: 1; transform: translateY(1px); }
+}
+
+/* Live timer island inside the notch */
+.demo-island {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  height: var(--menubar);
+  padding: 0 14px;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+
+body.running:not(.open) .demo-island { opacity: 1; }
+body.running .notch { width: 300px; }
+.notch { transition: width 0.45s cubic-bezier(0.2, 0.9, 0.25, 1); }
+body.open .notch { width: 190px; }
+
+.demo-ring { width: 15px; height: 15px; transform: rotate(-90deg); flex: none; }
+.demo-ring-track { fill: none; stroke: rgba(255, 255, 255, 0.18); stroke-width: 3; }
+
+.demo-ring-fill {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-dasharray: 63;
+  stroke-dashoffset: 63;
+  transition: stroke-dashoffset 1s linear;
+}
+
+.demo-island-time {
+  color: var(--accent);
+  font-size: 12.5px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The workspace drops out of the notch, over the page */
+.workspace {
+  position: fixed;
+  top: var(--menubar);
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(1060px, 94vw);
+  z-index: 9;
+  pointer-events: none;
+}
+
+.panel-drop {
+  background: #000;
+  border-radius: 0 0 26px 26px;
+  padding: 0 10px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-top: 0;
+  box-shadow: 0 40px 90px rgba(0, 0, 0, 0.75);
+  transform-origin: top center;
+  transform: translateY(-14px) scale(0.97);
+  opacity: 0;
+  visibility: hidden;
+  transition: transform 0.45s cubic-bezier(0.2, 0.9, 0.25, 1), opacity 0.22s ease, visibility 0.45s;
+}
+
+body.open .workspace { pointer-events: auto; }
+
+body.open .panel-drop {
+  transform: translateY(0) scale(1);
+  opacity: 1;
+  visibility: visible;
+}
+
+.demo-top {
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #fff;
+  font-size: 12.5px;
+  padding: 0 8px;
+}
+
+.demo-brand { display: flex; align-items: center; gap: 8px; font-weight: 650; }
+.demo-brand img { border-radius: 5px; }
+.demo-tabs { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 12px; }
+.demo-tabs b { color: #fff; background: rgba(255, 255, 255, 0.14); padding: 4px 9px; border-radius: 7px; font-weight: 600; }
+
+.demo-close {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  border: 0;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 10px;
+}
+
+.demo-cards { display: grid; grid-template-columns: 1.35fr 0.8fr 1fr 0.95fr; gap: 10px; }
+
+.demo-card {
+  min-height: 210px;
+  padding: 13px;
+  border-radius: 16px;
+  font-size: 12.5px;
+  gap: 8px;
+}
+
+.demo-card.center { align-items: center; justify-content: center; text-align: center; }
+
+.demo-head {
+  display: flex;
+  justify-content: space-between;
+  font-weight: 650;
+  font-size: 12.5px;
+  color: var(--ink);
+}
+
+.demo-input {
+  width: 100%;
+  border: 0;
+  border-radius: 9px;
+  padding: 8px 10px;
+  background: rgba(0, 0, 0, 0.08);
+  color: var(--ink);
+  font: inherit;
+  font-size: 12.5px;
+}
+
+.demo-input::placeholder { color: var(--ink-3); }
+.demo-input:focus { outline: 2px solid rgba(23, 23, 26, 0.3); }
+
+.demo-tasks { display: grid; gap: 6px; }
+
+.demo-task {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  cursor: pointer;
+  color: var(--ink);
+  border-bottom: 1px dotted rgba(23, 23, 26, 0.25);
+  padding-bottom: 6px;
+  transition: opacity 0.15s ease;
+}
+
+.demo-task:active { opacity: 0.6; }
+
+.demo-check {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(23, 23, 26, 0.55);
+  flex: none;
+  transition: background 0.18s ease;
+}
+
+.demo-task.done .demo-check { background: var(--ink); border-color: var(--ink); }
+.demo-task.done .demo-title { text-decoration: line-through; color: var(--ink-2); }
+
+.demo-foot { margin-top: auto; font-size: 11px; color: var(--ink-3); }
+
+.demo-clock {
+  font-size: 30px;
+  font-weight: 700;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+}
+
+.demo-state { font-size: 11.5px; color: var(--ink-2); margin-bottom: 10px; }
+
+.demo-start {
+  background: var(--ink);
+  color: #fff;
+  border: 0;
+  border-radius: 9px;
+  padding: 8px 18px;
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 650;
+  cursor: pointer;
+  transition: transform 0.12s ease;
+}
+
+.demo-start:active { transform: scale(0.96); }
+
+.demo-note {
+  flex: 1;
+  min-height: 80px;
+  resize: none;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+
+.demo-note:focus { outline: none; }
+
+.demo-event {
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 9px;
+  padding: 8px 10px;
+  display: grid;
+  gap: 2px;
+  color: var(--ink);
+  font-size: 12px;
+}
+
+.demo-event span { color: var(--ink-2); font-size: 11px; }
+.demo-event.now b::after { content: " ●"; color: #2f9e44; font-size: 9px; }
+
+.hero-hint {
+  margin: 26px 0 0;
+  font-size: 13.5px;
+  color: var(--muted);
+  animation: bob 2.6s ease-in-out infinite;
+}
+
+@keyframes bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(4px); }
+}
+
+@media (max-width: 860px) {
+  .demo-cards { grid-template-columns: 1fr 1fr; }
+  .demo-card { min-height: 150px; }
+  .hero-hint { display: none; }
+}

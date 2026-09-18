@@ -76,31 +76,42 @@ Black Hole reads calendars through macOS, so add your accounts there once:
 
 ## Use it from AI apps (MCP)
 
-Black Hole has a built-in [Model Context Protocol](https://modelcontextprotocol.io) server. Turn it on, copy one URL, and paste it into any MCP client: Claude Code, Cursor, Claude Desktop, claude.ai or ChatGPT.
+Black Hole has a built-in [Model Context Protocol](https://modelcontextprotocol.io) server, so AI assistants can work with your day:
 
-1. Open **Settings → AI Assistants** and turn on **AI access (MCP)**.
-2. Click **Copy URL** and pick the address for where the client runs:
-   - **Apps on this Mac** (Claude Code, Cursor, Claude Desktop): a loopback URL, nothing to install.
-   - **My other devices** (needs [Tailscale](https://tailscale.com)): a private, permanent address for your other machines and agents, with nothing exposed to the internet. Switch on **My devices** first.
-   - **Web apps** (claude.ai, ChatGPT): a public HTTPS URL, since those run on their own servers. Switch on **Web apps** first.
-3. Add it to your client, for example:
-   ```
-   claude mcp add --transport http black-hole <your-url>
-   ```
-   In claude.ai or ChatGPT, add it as a custom connector with no authentication.
-4. Ask things like *"add my three most urgent GitHub issues to today"*, *"start a 45-minute focus session on the launch post"* or *"what did I focus on this week?"*
+> *"Add my three most urgent GitHub issues to today"*
+> *"Start a 45-minute focus session on the launch post"*
+> *"What did I focus on this week?"*
 
-The URL carries your access token, so treat it like a password. **Reset Access Token** in the Copy menu revokes it.
+Turn it on in **Settings → AI Assistants → AI access (MCP)**, then click **Copy URL** and pick where your assistant runs.
 
-### Public URL options
+### Apps on this Mac (Claude Code, Cursor, Claude Desktop)
 
-| | **Tailscale Funnel** (default when Tailscale is installed) | **Cloudflare quick tunnel** |
-|---|---|---|
-| Setup | Tailscale signed in, Funnel enabled for your tailnet | `brew install cloudflared` |
-| URL | `https://your-mac.your-tailnet.ts.net/mcp/<token>`, **permanent** | `https://random-words.trycloudflare.com/mcp/<token>`, **changes on every restart** |
-| Good for | Connectors you set up once | Networks that can't reach `ts.net`, or no Tailscale |
+Copy **Apps on this Mac** and add it to your client. Nothing to install:
 
-Switch between them from the small provider button under the Web apps row. Public access only works while Black Hole is open. The current URLs are also written to `~/Library/Application Support/Black Hole/mcp.json`, handy for scripts and agents.
+```
+claude mcp add --transport http black-hole <copied-url>
+```
+
+In Cursor or Claude Desktop, add it as an MCP server with that URL.
+
+### Web apps (claude.ai, ChatGPT)
+
+These run on their own servers and can't reach your Mac, so switch on **Web apps**. Black Hole opens a secure tunnel, downloading the tunnel client itself the first time (about 20MB, no Homebrew needed). Then copy **Web apps (claude.ai, ChatGPT)** and add it in:
+
+- **claude.ai** → Settings → Connectors → Add custom connector, no authentication
+- **ChatGPT** → connectors in developer mode, no authentication
+
+The URL changes whenever Black Hole restarts. If you use [Tailscale](https://tailscale.com), switch the provider under the Web apps row to **Tailscale Funnel** and the URL becomes permanent.
+
+### Your own machines (optional)
+
+With Tailscale installed, **My devices** serves the same MCP endpoint on your tailnet, so your other Macs, servers or agents can connect privately with nothing exposed to the internet.
+
+### Good to know
+
+- The URL carries your access token, so treat it like a password. **Reset Access Token** in the Copy menu revokes it.
+- Public and tailnet access only work while Black Hole is open.
+- Current URLs are also written to `~/Library/Application Support/Black Hole/mcp.json`, handy for scripts.
 
 | Tool | What it does |
 |---|---|

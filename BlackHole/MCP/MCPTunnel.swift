@@ -8,7 +8,8 @@ import Foundation
 final class MCPTunnel {
     enum State: Equatable {
         case off
-        case notInstalled
+        /// Fetching the tunnel client the first time public access is switched on.
+        case installing(Double)
         case starting
         case running(URL)
         case failed(String)
@@ -59,8 +60,10 @@ final class MCPTunnel {
         Self.killOrphan()
     }
 
+    /// Black Hole's own copy first, then any the user installed themselves.
     static var cloudflaredPath: String? {
-        let candidates = ["/opt/homebrew/bin/cloudflared", "/usr/local/bin/cloudflared", "/usr/bin/cloudflared"]
+        let candidates = [TunnelInstaller.managedBinary.path, "/opt/homebrew/bin/cloudflared",
+                          "/usr/local/bin/cloudflared", "/usr/bin/cloudflared"]
         return candidates.first { FileManager.default.isExecutableFile(atPath: $0) }
     }
 
@@ -93,7 +96,21 @@ final class MCPTunnel {
         }
 
         guard let binary = Self.cloudflaredPath else {
-            state = .notInstalled
+            // First run: fetch the tunnel client, then start.
+            state = .installing(0)
+            Task { @MainActor in
+                do {
+                    _ = try await TunnelInstaller.install { fraction in
+                        Task { @MainActor in
+                            if case .installing = self.state { self.state = .installing(fraction) }
+                        }
+                    }
+                    guard Self.isEnabled else { return }
+                    self.start(localPort: localPort)
+                } catch {
+                    self.state = .failed(error.localizedDescription)
+                }
+            }
             return
         }
         state = .starting

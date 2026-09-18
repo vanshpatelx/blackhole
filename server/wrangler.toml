@@ -24,7 +24,10 @@ CF_ZONE_ID = "d93f00f95b00a4fe9715fa4fe8336a80"
 # but not *.mcp.getblackhole.app, so addresses look like mcp-a7f3.getblackhole.app.
 HOSTNAME_SUFFIX = "getblackhole.app"
 HOSTNAME_PREFIX = "mcp-"
+# Work a client must do before it may register a hostname on this domain.
+POW_BITS = "20"
+DAILY_LIMIT = "300"
 # Port the Black Hole app listens on locally.
 LOCAL_PORT = "52321"
 
-# Only secret: CF_API_TOKEN  (wrangler secret put CF_API_TOKEN)
+# Secrets (wrangler secret put ...): CF_API_TOKEN, DIAGNOSE_KEY

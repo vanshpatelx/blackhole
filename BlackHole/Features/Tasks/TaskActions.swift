@@ -67,7 +67,8 @@ final class TaskActions {
         if focus.taskID == task.id {
             focus.toggle()
         } else {
-            focus.start(taskID: task.id, targetSec: task.timeLimitSec)
+            // A task with no time limit counts up; only an explicit limit becomes a countdown.
+            focus.start(taskID: task.id, targetSec: task.timeLimitSec, stopwatch: task.timeLimitSec == nil)
         }
     }
 

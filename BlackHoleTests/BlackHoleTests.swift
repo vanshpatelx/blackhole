@@ -199,6 +199,22 @@ final class MCPRouterTests: XCTestCase {
         XCTAssertEqual(try tool("start_focus", ["minutes": 0])["mode"] as? String, "stopwatch")
     }
 
+    func testFocusOnATaskCountsUpUnlessItHasATimeLimit() throws {
+        let plain = try XCTUnwrap(try tool("add_task", ["title": "No limit"])["task"] as? [String: Any])
+        let started = try tool("start_focus", ["task_id": plain["id"] as! String])
+        XCTAssertEqual(started["mode"] as? String, "stopwatch")
+        _ = try tool("stop_focus")
+
+        let limited = try XCTUnwrap(try tool("add_task", ["title": "Has limit", "time_limit_minutes": 45])["task"] as? [String: Any])
+        let countdown = try tool("start_focus", ["task_id": limited["id"] as! String])
+        XCTAssertEqual(countdown["mode"] as? String, "countdown")
+        XCTAssertEqual(countdown["remaining_seconds"] as? Int, 45 * 60)
+        _ = try tool("stop_focus")
+
+        // The timer card on its own still offers the usual 25-minute countdown.
+        XCTAssertEqual(try tool("start_focus")["mode"] as? String, "countdown")
+    }
+
     func testAppendNoteNeverOverwrites() throws {
         _ = try tool("append_note", ["text": "first"])
         let text = try tool("append_note", ["text": "second"])["text"] as? String

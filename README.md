@@ -11,7 +11,7 @@
 
 <p align="center">
   <a href="https://github.com/vanshpatelx/blackhole/releases/latest"><b>Download for Mac</b></a> ·
-  <a href="https://getblackhole.app">getblackhole.app</a> ·
+  <a href="https://getblackhole.app"><b>getblackhole.app</b></a> ·
   <a href="docs/ROADMAP.md">Roadmap</a>
 </p>
 
@@ -132,7 +132,20 @@ make run      # generate the Xcode project, build and launch
 
 Needs Xcode 16 or later. The Xcode project is generated and not committed, so edit `project.yml` for target settings.
 
-### Project layout
+### Repository layout
+
+This repo holds everything: the app, the service that hands out addresses, and the website.
+
+```
+BlackHole/           The macOS app
+server/              Cloudflare Worker that issues a permanent address per install
+web/                 The getblackhole.app landing page (static, deployed to Cloudflare)
+docs/                Roadmap and design notes
+```
+
+Each part deploys on its own: `make dmg` for the app, `wrangler deploy` inside `server/` or `web/`.
+
+### App layout
 
 ```
 BlackHole/

@@ -5,9 +5,9 @@ struct WorkspaceView: View {
     var body: some View {
         HStack(spacing: 8) {
             TasksCard()
-            TimerCard().frame(width: 146)
-            NotepadCard().frame(width: 140)
-            EventsCard().frame(width: 150)
+            TimerCard().frame(width: 172)
+            NotepadCard().frame(width: 182)
+            EventsCard().frame(width: 152)
         }
     }
 }
@@ -39,43 +39,54 @@ private struct TaskList: View {
         Card(tint: Palette.tasks) {
             VStack(alignment: .leading, spacing: 10) {
                 CardHeader(icon: "checklist", title: "Today's tasks") {
-                    if searching {
-                        TextField("", text: $search, prompt: Text("Search").foregroundStyle(Palette.inkTertiary))
-                            .textFieldStyle(.plain)
-                            .font(.system(size: 12))
-                            .focused($searchFocused)
-                            .frame(maxWidth: 110)
-                            .onExitCommand(perform: endSearch)
-                        IconButton(systemName: "xmark", size: 18, help: "Clear search", action: endSearch)
-                    } else {
-                        Text("\(tasks.filter(\.isDone).count) / \(tasks.count)")
-                            .font(.system(size: 12, weight: .medium).monospacedDigit())
-                            .foregroundStyle(Palette.inkSecondary)
-                            .contentTransition(.numericText())
-                        IconButton(systemName: "magnifyingglass", size: 18, help: "Search today's tasks") {
-                            searching = true
-                            searchFocused = true
-                        }
+                    Text("\(tasks.filter(\.isDone).count) / \(tasks.count)")
+                        .font(.system(size: 12, weight: .medium).monospacedDigit())
+                        .foregroundStyle(Palette.inkSecondary)
+                        .contentTransition(.numericText())
+                    IconButton(systemName: searching ? "xmark" : "magnifyingglass", size: 22,
+                               help: searching ? "Clear search" : "Search today's tasks") {
+                        searching ? endSearch() : startSearch()
                     }
                 }
 
+                // The add row doubles as the search row, so search is a full-width field you can see.
                 HStack(spacing: 8) {
-                    Image(systemName: "plus")
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundStyle(Palette.inkSecondary)
-                    TextField("", text: $draft, prompt: Text("What needs doing?").foregroundStyle(Palette.inkTertiary))
-                        .textFieldStyle(.plain)
-                        .font(.system(size: 13))
-                        .focused($inputFocused)
-                        .onSubmit(submit)
-                    Image(systemName: "return")
-                        .font(.system(size: 11.5, weight: .medium))
-                        .foregroundStyle(draft.isEmpty ? Palette.inkTertiary : Palette.ink)
+                    Image(systemName: searching ? "magnifyingglass" : "plus")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(searching ? Palette.ink : Palette.inkSecondary)
+                        .contentTransition(.symbolEffect(.replace))
+                    if searching {
+                        TextField("", text: $search, prompt: Text("Search today's tasks").foregroundStyle(Palette.inkTertiary))
+                            .textFieldStyle(.plain)
+                            .font(.system(size: 13))
+                            .focused($searchFocused)
+                            .onExitCommand(perform: endSearch)
+                        if !search.isEmpty {
+                            IconButton(systemName: "xmark.circle.fill", size: 18, help: "Clear", action: { search = "" })
+                        }
+                    } else {
+                        TextField("", text: $draft, prompt: Text("What needs doing?").foregroundStyle(Palette.inkTertiary))
+                            .textFieldStyle(.plain)
+                            .font(.system(size: 13))
+                            .focused($inputFocused)
+                            .onSubmit(submit)
+                        Image(systemName: "return")
+                            .font(.system(size: 11.5, weight: .medium))
+                            .foregroundStyle(draft.isEmpty ? Palette.inkTertiary : Palette.ink)
+                    }
                 }
                 .padding(.horizontal, 11)
                 .frame(height: 36)
-                .background(RoundedRectangle(cornerRadius: Radius.well, style: .continuous).fill(Palette.well))
-                .onTapGesture { inputFocused = true }
+                .background(
+                    RoundedRectangle(cornerRadius: Radius.well, style: .continuous)
+                        .fill(searching ? Palette.wellStrong : Palette.well)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: Radius.well, style: .continuous)
+                                .strokeBorder(Palette.ink.opacity(searching ? 0.35 : 0), lineWidth: 1)
+                        )
+                )
+                .animation(.easeOut(duration: 0.18), value: searching)
+                .onTapGesture { searching ? (searchFocused = true) : (inputFocused = true) }
 
                 ScrollView(.vertical, showsIndicators: false) {
                     LazyVStack(spacing: 3) {
@@ -113,6 +124,11 @@ private struct TaskList: View {
         guard isSearching else { return tasks }
         let needle = search.trimmingCharacters(in: .whitespaces)
         return tasks.filter { $0.title.localizedCaseInsensitiveContains(needle) }
+    }
+
+    private func startSearch() {
+        searching = true
+        searchFocused = true
     }
 
     private func endSearch() {

@@ -94,18 +94,18 @@ final class MCPServer {
     /// Public URL to paste into claude.ai or ChatGPT connectors, when the tunnel is up.
     var connectorURL: URL? { tunnel.connectorURL(token: config.token) }
 
+    /// Single switch: the MCP endpoint and the public URL that web assistants need.
     func setEnabled(_ enabled: Bool) {
         UserDefaults.standard.set(enabled, forKey: MCPConfig.enabledKey)
         config.enabled = enabled
         config.save()
+        setRemoteAccess(enabled)
         if enabled {
             start()
             if isTailnetEnabled { startTailnetListener() }
-            if MCPTunnel.isEnabled { tunnel.start(localPort: config.port) }
         } else {
             stop()
             stopTailnetListener()
-            tunnel.stop()
         }
     }
 
@@ -180,6 +180,9 @@ final class MCPServer {
     /// For MCP clients running on this Mac. Tailscale on macOS can't reach this machine's own
     /// tailnet address, so apps here always use loopback.
     var localURL: URL? { URL(string: "http://127.0.0.1:\(config.port)/mcp/\(config.token)") }
+
+    /// The one URL to hand to any assistant: public when the tunnel is up, loopback until then.
+    var shareURL: URL? { connectorURL ?? localURL }
 
     private func start(tryPort: UInt16? = nil, attemptsLeft: Int = 5) {
         stop()

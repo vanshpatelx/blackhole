@@ -13,7 +13,10 @@ interface Env {
   /** Only secret needed: a token with Account → Cloudflare Tunnel → Edit and Zone → DNS → Edit. */
   CF_API_TOKEN: string;
   ZONE_NAME: string;
+  CF_ACCOUNT_ID?: string;
+  CF_ZONE_ID?: string;
   HOSTNAME_SUFFIX: string;
+  HOSTNAME_PREFIX: string;
   LOCAL_PORT: string;
 }
 
@@ -47,6 +50,9 @@ async function cf<T>(env: Env, path: string, init: RequestInit = {}): Promise<T>
 
 /** Account and zone ids are looked up once from the token, so deploying needs a single secret. */
 async function ids(env: Env): Promise<{ accountId: string; zoneId: string }> {
+  if (env.CF_ACCOUNT_ID && env.CF_ZONE_ID) {
+    return { accountId: env.CF_ACCOUNT_ID, zoneId: env.CF_ZONE_ID };
+  }
   const cached = (await env.INSTALLS.get("cf:ids", "json")) as { accountId: string; zoneId: string } | null;
   if (cached) return cached;
 
@@ -91,7 +97,7 @@ async function enroll(request: Request, env: Env): Promise<Response> {
   // Re-enrolling the same install returns a fresh token for the tunnel it already owns.
   const existing = (await env.INSTALLS.get(`install:${installId}`, "json")) as Install | null;
   const slug = existing?.slug ?? newSlug();
-  const hostname = existing?.hostname ?? `${slug}.${env.HOSTNAME_SUFFIX}`;
+  const hostname = existing?.hostname ?? `${env.HOSTNAME_PREFIX}${slug}.${env.HOSTNAME_SUFFIX}`;
 
   let tunnelId = existing?.tunnelId;
   let token: string;
@@ -153,6 +159,38 @@ async function revoke(request: Request, env: Env): Promise<Response> {
   return json({ ok: true });
 }
 
+/** Reports which permissions the configured API token actually has, to make setup mistakes obvious. */
+async function diagnose(env: Env): Promise<Response> {
+  const { accountId, zoneId } = await ids(env);
+  let lastError = "";
+  const check = async (path: string) => {
+    try {
+      await cf(env, path);
+      return true;
+    } catch (error) {
+      lastError = String(error).slice(0, 200);
+      return false;
+    }
+  };
+  // A short hash of the token, so you can confirm the Worker holds the same one you tested locally.
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(env.CF_API_TOKEN ?? ""));
+  const fingerprint = [...new Uint8Array(digest)].slice(0, 4).map((b) => b.toString(16).padStart(2, "0")).join("");
+
+  const tunnels = await check(`/accounts/${accountId}/cfd_tunnel?per_page=1`);
+  const dns = await check(`/zones/${zoneId}/dns_records?per_page=1`);
+  return json({
+    tokenFingerprint: fingerprint,
+    lastError,
+    tokenCanManageTunnels: tunnels,
+    tokenCanManageDNS: dns,
+    ready: tunnels && dns,
+    needs: [
+      tunnels ? null : "Account → Cloudflare Tunnel → Edit",
+      dns ? null : "Zone → DNS → Edit (getblackhole.app)",
+    ].filter(Boolean),
+  });
+}
+
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
@@ -160,6 +198,7 @@ export default {
       if (request.method === "POST" && url.pathname === "/v1/enroll") return await enroll(request, env);
       if (request.method === "POST" && url.pathname === "/v1/revoke") return await revoke(request, env);
       if (url.pathname === "/health") return json({ ok: true });
+      if (url.pathname === "/v1/diagnose") return await diagnose(env);
       return json({ error: "Not found" }, 404);
     } catch (error) {
       return json({ error: String(error) }, 502);

@@ -1,6 +1,6 @@
 import Foundation
 
-/// Permanent public address for this install, e.g. `https://a7f3.mcp.getblackhole.app`.
+/// Permanent public address for this install, e.g. `https://mcp-a7f3.getblackhole.app`.
 ///
 /// The app asks Black Hole's enrollment API once for a Cloudflare Tunnel that belongs to this Mac,
 /// then runs that tunnel itself. Requests go from the assistant to Cloudflare and straight down the

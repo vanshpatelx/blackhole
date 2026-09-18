@@ -3,6 +3,9 @@ main = "src/index.ts"
 compatibility_date = "2026-09-01"
 
 # Public API the app talks to. Deploy with: wrangler deploy
+# Also reachable on workers.dev while the custom domain is being set up.
+workers_dev = true
+
 routes = [
   { pattern = "api.getblackhole.app/*", zone_name = "getblackhole.app" }
 ]
@@ -10,12 +13,17 @@ routes = [
 # Remembers which tunnel belongs to which install, so re-enrolling is idempotent.
 [[kv_namespaces]]
 binding = "INSTALLS"
-id = "REPLACE_WITH_KV_ID"
+id = "7c3c5ab16bce4b9088fd67c582e69e05"
 
 [vars]
 ZONE_NAME = "getblackhole.app"
-# Subdomain that per-user hostnames live under, e.g. a7f3.mcp.getblackhole.app
-HOSTNAME_SUFFIX = "mcp.getblackhole.app"
+# Ids are not secret; setting them saves a zone lookup (and a Zone:Read permission).
+CF_ACCOUNT_ID = "3f9c1728a8c0a136c08363e03a0c3238"
+CF_ZONE_ID = "d93f00f95b00a4fe9715fa4fe8336a80"
+# Hostnames must stay one level deep: Cloudflare's free Universal SSL covers *.getblackhole.app
+# but not *.mcp.getblackhole.app, so addresses look like mcp-a7f3.getblackhole.app.
+HOSTNAME_SUFFIX = "getblackhole.app"
+HOSTNAME_PREFIX = "mcp-"
 # Port the Black Hole app listens on locally.
 LOCAL_PORT = "52321"
 

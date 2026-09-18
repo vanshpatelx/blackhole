@@ -60,6 +60,8 @@ claude.ai and ChatGPT connectors call MCP from their own servers and can't reach
 - Black Hole runs the user's `cloudflared` as a quick tunnel (`cloudflared tunnel --url http://127.0.0.1:<port>`), shows the `trycloudflare.com` URL, and restarts it if it drops.
 - Connectors authenticate with the token in the path: `https://<tunnel>/mcp/<token>`. The local endpoint keeps the `Authorization: Bearer` header.
 - Tunnel requests (identified by Cloudflare's `CF-Connecting-IP`) are refused whenever Remote access is off. The process is stopped on quit, and a stray one from a crash is cleaned up on the next launch.
+- **Tailscale support (v0.2.1):** when Tailscale is installed, Funnel is the default provider because its URL is permanent, and a second listener on the tailnet address lets the user's own machines and agents connect privately with no public exposure. Cloudflare quick tunnels remain the fallback for networks that can't reach `ts.net`.
+- Current URLs are mirrored into `mcp.json` so scripts and agents can discover them.
 - Later: OAuth for connectors, per-tool permissions for remote callers (for example read-only), and stable URLs through a named tunnel on the user's own domain.
 
 ### 1B. MCP task sources (later)

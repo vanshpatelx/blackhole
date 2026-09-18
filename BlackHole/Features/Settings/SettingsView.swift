@@ -248,6 +248,7 @@ private struct MCPSettings: View {
                 }
 
                 RemoteAccessRow()
+                TailnetAccessRow()
             }
         }
     }
@@ -296,6 +297,19 @@ private struct RemoteAccessRow: View {
             .controlSize(.mini)
             .tint(Palette.ink)
 
+            if mcp.tunnel.state != .off {
+                PlainMenu {
+                    ForEach(MCPTunnel.Provider.allCases) { provider in
+                        Button(provider.title) { mcp.setRemoteProvider(provider) }
+                    }
+                } label: {
+                    Label(MCPTunnel.provider == .tailscale ? "Tailscale (permanent)" : "Cloudflare (temporary)", systemImage: "arrow.triangle.swap")
+                        .labelStyle(CompactLabelStyle())
+                        .font(.system(size: 10.5, weight: .medium))
+                        .foregroundStyle(Palette.inkSecondary)
+                }
+            }
+
             switch mcp.tunnel.state {
             case .off:
                 EmptyView()
@@ -338,6 +352,45 @@ private struct RemoteAccessRow: View {
                 }
                 .buttonStyle(.plain)
                 .help("Paste into claude.ai → Settings → Connectors, or ChatGPT connectors. Anyone with this URL can use your planner.")
+            }
+        }
+    }
+}
+
+/// Direct access from the user's other machines over Tailscale: private and permanent.
+private struct TailnetAccessRow: View {
+    @Environment(MCPServer.self) private var mcp
+    @State private var copied = false
+
+    var body: some View {
+        if Tailscale.isAvailable {
+            VStack(alignment: .leading, spacing: 6) {
+                Toggle(isOn: Binding(get: { mcp.isTailnetEnabled }, set: { mcp.setTailnetAccess($0) })) {
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text("Tailscale network").font(.system(size: 12, weight: .medium))
+                        Text("Your own machines and agents, no public URL")
+                            .font(.system(size: 10.5))
+                            .foregroundStyle(Palette.inkSecondary)
+                    }
+                }
+                .toggleStyle(.switch)
+                .controlSize(.mini)
+                .tint(Palette.ink)
+
+                if mcp.isTailnetEnabled, let url = mcp.tailnetURL {
+                    Button {
+                        NSPasteboard.general.clearContents()
+                        NSPasteboard.general.setString(url.absoluteString, forType: .string)
+                        withAnimation { copied = true }
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 2) { withAnimation { copied = false } }
+                    } label: {
+                        Label(copied ? "Copied tailnet URL" : "Copy tailnet URL", systemImage: copied ? "checkmark" : "network")
+                            .labelStyle(CompactLabelStyle())
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundStyle(Palette.ink)
+                    }
+                    .buttonStyle(.plain)
+                }
             }
         }
     }

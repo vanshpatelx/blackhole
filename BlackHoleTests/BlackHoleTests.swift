@@ -227,3 +227,24 @@ final class HTTPRequestParsingTests: XCTestCase {
         XCTAssertEqual(request?.body.count, 10)
     }
 }
+
+final class HTTPKeepAliveTests: XCTestCase {
+    func testKeepAliveByDefaultAndPipelinedBytesArePreserved() throws {
+        let first = "POST /mcp HTTP/1.1\r\nContent-Length: 2\r\n\r\n{}"
+        let second = "POST /mcp HTTP/1.1\r\nContent-Length: 0\r\n\r\n"
+        let request = try XCTUnwrap(HTTPRequest(Data((first + second).utf8)))
+        XCTAssertTrue(request.wantsKeepAlive)
+        XCTAssertEqual(request.byteCount, first.utf8.count, "Only the first request's bytes are consumed")
+
+        let closing = try XCTUnwrap(HTTPRequest(Data("POST /mcp HTTP/1.1\r\nConnection: close\r\nContent-Length: 0\r\n\r\n".utf8)))
+        XCTAssertFalse(closing.wantsKeepAlive)
+    }
+
+    func testResponseHeaderReflectsKeepAlive() {
+        var response = HTTPResponse(status: 200, body: Data("hi".utf8))
+        response.keepAlive = true
+        XCTAssertTrue(String(decoding: response.serialized(), as: UTF8.self).contains("Connection: keep-alive"))
+        response.keepAlive = false
+        XCTAssertTrue(String(decoding: response.serialized(), as: UTF8.self).contains("Connection: close"))
+    }
+}

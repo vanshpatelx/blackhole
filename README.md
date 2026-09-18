@@ -33,7 +33,7 @@ It's free, open source, and your data never leaves your Mac.
 - **Events from all your calendars**: iCloud, Google (as many accounts as you like), Outlook/Exchange and subscribed calendars, color-coded and read-only. Pick which calendars show in **Settings → Calendars**.
 - **Insights**: focus time, completed vs. planned tasks, active days and your streak over the last week.
 - **Floating button**: a draggable button for any display (great with external monitors). Click it and the whole workspace opens right next to it.
-- **Works with AI assistants (MCP)**: turn on the built-in MCP server and Claude, Cursor or any MCP client can list and add tasks, run focus sessions, read your notes and pull insights.
+- **Works with AI assistants (MCP)**: one URL connects Claude, Cursor, ChatGPT or any MCP client so they can list and add tasks, run focus sessions, read your notes and pull insights.
 - **Holey the mascot**: blinks, looks up when you hover, cheers when you finish something, gets serious during focus sessions, and dozes off when you've been away.
 
 <p align="center">
@@ -74,30 +74,25 @@ Black Hole reads calendars through macOS, so add your accounts there once:
 2. Make sure **Calendars** is switched on for the account.
 3. In Black Hole, open **Settings → Calendars** and tick the calendars you want to see.
 
-## Use it from Claude, Cursor and other AI apps (MCP)
+## Use it from AI apps (MCP)
 
-Black Hole has a built-in [Model Context Protocol](https://modelcontextprotocol.io) server. It's off by default and only listens on `127.0.0.1`, protected by a token.
+Black Hole has a built-in [Model Context Protocol](https://modelcontextprotocol.io) server. Turn it on, copy one URL, and paste it into any MCP client: Claude Code, Cursor, Claude Desktop, claude.ai or ChatGPT.
 
-1. Open **Settings → AI Assistants** and turn on **MCP server**.
-2. Click **Copy setup for…** and pick your client:
-   - **Claude Code**: paste the copied `claude mcp add …` command into your terminal.
-   - **Cursor**: paste the JSON into `~/.cursor/mcp.json`.
-   - **Claude Desktop**: paste the JSON into `~/Library/Application Support/Claude/claude_desktop_config.json`. It uses the bundled `blackhole-mcp` command, which launches Black Hole if it isn't running.
-3. Ask things like *"add my three most urgent GitHub issues to today"*, *"start a 45-minute focus session on the launch post"* or *"what did I focus on this week?"*
+1. Open **Settings → AI Assistants** and turn on **AI access (MCP)**.
+2. Click **Copy URL** and pick the address for where the client runs:
+   - **Apps on this Mac** (Claude Code, Cursor, Claude Desktop): a loopback URL, nothing to install.
+   - **My other devices** (needs [Tailscale](https://tailscale.com)): a private, permanent address for your other machines and agents, with nothing exposed to the internet. Switch on **My devices** first.
+   - **Web apps** (claude.ai, ChatGPT): a public HTTPS URL, since those run on their own servers. Switch on **Web apps** first.
+3. Add it to your client, for example:
+   ```
+   claude mcp add --transport http black-hole <your-url>
+   ```
+   In claude.ai or ChatGPT, add it as a custom connector with no authentication.
+4. Ask things like *"add my three most urgent GitHub issues to today"*, *"start a 45-minute focus session on the launch post"* or *"what did I focus on this week?"*
 
-### Your own machines and agents (Tailscale network)
+The URL carries your access token, so treat it like a password. **Reset Access Token** in the Copy menu revokes it.
 
-If you use [Tailscale](https://tailscale.com), other machines on your tailnet, including servers running your own agents, can reach Black Hole directly. Nothing is exposed to the internet and the address never changes.
-
-1. In **Settings → AI Assistants**, turn on **Tailscale network**.
-2. Click **Copy tailnet URL**: `http://100.x.y.z:52321/mcp/<token>`.
-3. Use it as the MCP URL on your other machine.
-
-### claude.ai, ChatGPT and other web apps (remote access)
-
-Cloud-hosted assistants run on their own servers and can't reach `127.0.0.1`. Turn on **Remote access** in **Settings → AI Assistants**, click **Copy connector URL**, then paste it into **claude.ai → Settings → Connectors → Add custom connector** (no authentication) or a ChatGPT connector (developer mode, no authentication).
-
-Two ways to get that public URL:
+### Public URL options
 
 | | **Tailscale Funnel** (default when Tailscale is installed) | **Cloudflare quick tunnel** |
 |---|---|---|
@@ -105,12 +100,7 @@ Two ways to get that public URL:
 | URL | `https://your-mac.your-tailnet.ts.net/mcp/<token>`, **permanent** | `https://random-words.trycloudflare.com/mcp/<token>`, **changes on every restart** |
 | Good for | Connectors you set up once | Networks that can't reach `ts.net`, or no Tailscale |
 
-Switch between them from the small provider button under the Remote access switch.
-
-Good to know:
-- The URL contains your secret token, so **anyone with it can use your planner**. Treat it like a password; **Reset Access Token** in the **Copy setup for…** menu revokes it immediately.
-- Public access only works while Black Hole is open and Remote access is on. Quick tunnel URLs die when the app restarts, so prefer Tailscale for anything you configure once.
-- The current URLs are also written to `~/Library/Application Support/Black Hole/mcp.json`, handy for scripts and agents.
+Switch between them from the small provider button under the Web apps row. Public access only works while Black Hole is open. The current URLs are also written to `~/Library/Application Support/Black Hole/mcp.json`, handy for scripts and agents.
 
 | Tool | What it does |
 |---|---|
@@ -150,12 +140,11 @@ BlackHole/
 ├─ App/              App entry, shared services (database, timer, calendar, mascot mood)
 ├─ Notch/            Notch panel window, hover + hotkey handling, notch shape, top bar
 ├─ FloatingButton/   Draggable floating button and the workspace that opens beside it
-├─ MCP/              Local MCP server (JSON-RPC over HTTP on 127.0.0.1) and its tools
+├─ MCP/              MCP server (JSON-RPC over HTTP), tunnels and its tools
 ├─ Features/         Tasks, Focus timer, Notepad, Events, Insights, Settings, Dashboard
 ├─ Data/             SwiftData models, JSON export, demo data
 ├─ DesignSystem/     Colors, cards, buttons, dot-matrix digits, Holey the mascot
 └─ Resources/        App icon
-BlackHoleMCP/        `blackhole-mcp` stdio bridge bundled inside the app
 ```
 
 ## Roadmap

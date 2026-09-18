@@ -10,8 +10,7 @@
 
 ## v0.2: Black Hole for AI assistants (MCP server) ✅
 - Built-in MCP server so Claude, Cursor and other MCP clients can list, add and complete tasks, start focus sessions, read notes and pull insights
-- "Copy setup for…" Claude Code, Cursor and Claude Desktop in Settings
-- `blackhole-mcp` stdio bridge for clients that only launch local commands
+- One MCP URL to paste into any client, private over Tailscale or public through a tunnel
 - See [SYNC_AND_MCP.md](SYNC_AND_MCP.md)
 
 ## v0.3: multi-device sync, bring your own backend

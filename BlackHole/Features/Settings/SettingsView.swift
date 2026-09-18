@@ -224,13 +224,19 @@ private struct MCPSettings: View {
                         .lineLimit(1)
                     Spacer(minLength: 4)
                     PlainMenu {
-                        ForEach(MCPServer.Client.allCases) { client in
-                            Button(client.rawValue) { copy(mcp.snippet(for: client), label: client.rawValue) }
+                        if let url = mcp.localURL {
+                            Button("Apps on this Mac") { copy(url.absoluteString, label: "Copied") }
+                        }
+                        if let url = mcp.tailnetURL {
+                            Button("My other devices") { copy(url.absoluteString, label: "Copied") }
+                        }
+                        if let url = mcp.connectorURL {
+                            Button("Web apps (claude.ai, ChatGPT)") { copy(url.absoluteString, label: "Copied") }
                         }
                         Divider()
                         Button("Reset Access Token") { mcp.regenerateToken() }
                     } label: {
-                        Label(copied ?? "Copy setup", systemImage: copied == nil ? "doc.on.doc" : "checkmark")
+                        Label(copied ?? "Copy URL", systemImage: copied == nil ? "doc.on.doc" : "checkmark")
                             .labelStyle(CompactLabelStyle())
                             .font(.system(size: 10.5, weight: .semibold))
                             .foregroundStyle(.white)

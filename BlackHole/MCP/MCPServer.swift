@@ -1,8 +1,8 @@
 import Foundation
 import Network
 
-/// Shared settings for the local MCP endpoint. The app writes them to a file readable only by
-/// this user so the bundled `blackhole-mcp` bridge can find the port and token.
+/// Settings for the MCP endpoint, written to a file readable only by this user so scripts and
+/// agents can discover the current URLs.
 struct MCPConfig: Codable, Equatable {
     var enabled: Bool
     var port: UInt16
@@ -177,46 +177,9 @@ final class MCPServer {
         publishURLs()
     }
 
-    /// Path of the stdio bridge inside the app bundle.
-    var bridgePath: String {
-        Bundle.main.bundleURL.appending(path: "Contents/MacOS/blackhole-mcp").path
-    }
-
-    enum Client: String, CaseIterable, Identifiable {
-        case claudeCode = "Claude Code"
-        case cursor = "Cursor"
-        case claudeDesktop = "Claude Desktop"
-        var id: Self { self }
-    }
-
-    /// Ready-to-paste setup for each client.
-    func snippet(for client: Client) -> String {
-        switch client {
-        case .claudeCode:
-            return "claude mcp add --transport http black-hole \(config.endpoint) --header \"Authorization: Bearer \(config.token)\""
-        case .cursor:
-            return """
-                {
-                  "mcpServers": {
-                    "black-hole": {
-                      "url": "\(config.endpoint)",
-                      "headers": { "Authorization": "Bearer \(config.token)" }
-                    }
-                  }
-                }
-                """
-        case .claudeDesktop:
-            return """
-                {
-                  "mcpServers": {
-                    "black-hole": {
-                      "command": "\(bridgePath)"
-                    }
-                  }
-                }
-                """
-        }
-    }
+    /// For MCP clients running on this Mac. Tailscale on macOS can't reach this machine's own
+    /// tailnet address, so apps here always use loopback.
+    var localURL: URL? { URL(string: "http://127.0.0.1:\(config.port)/mcp/\(config.token)") }
 
     private func start(tryPort: UInt16? = nil, attemptsLeft: Int = 5) {
         stop()
@@ -282,9 +245,18 @@ final class MCPServer {
             if let chunk { data.append(chunk) }
 
             if let request = HTTPRequest(data) {
+                // Anything after this request belongs to the next one on a reused connection.
+                let leftover = data.count > request.byteCount ? data.subdata(in: request.byteCount..<data.count) : Data()
                 Task { @MainActor in
-                    let response = self.respond(to: request)
-                    connection.send(content: response.serialized(), completion: .contentProcessed { _ in connection.cancel() })
+                    var response = self.respond(to: request)
+                    response.keepAlive = request.wantsKeepAlive
+                    connection.send(content: response.serialized(), completion: .contentProcessed { _ in
+                        if request.wantsKeepAlive {
+                            self.receive(on: connection, buffer: leftover)
+                        } else {
+                            connection.cancel()
+                        }
+                    })
                 }
             } else if isComplete || error != nil || data.count > 4 << 20 {
                 connection.cancel()
@@ -339,6 +311,11 @@ struct HTTPRequest {
     let path: String
     let headers: [String: String]
     let body: Data
+    /// Bytes this request occupies, so a pipelined follow-up isn't lost.
+    let byteCount: Int
+
+    /// HTTP/1.1 keeps connections open unless the client says otherwise.
+    var wantsKeepAlive: Bool { headers["connection"]?.lowercased() != "close" }
 
     /// Parses a complete request, or returns `nil` if more bytes are needed.
     init?(_ data: Data) {
@@ -361,6 +338,7 @@ struct HTTPRequest {
         path = String(requestLine[1])
         self.headers = headers
         body = data.subdata(in: bodyStart..<(bodyStart + length))
+        byteCount = bodyStart + length
     }
 }
 
@@ -369,10 +347,11 @@ struct HTTPResponse {
     var contentType = "text/plain; charset=utf-8"
     var headers: [String: String] = [:]
     var body: Data
+    var keepAlive = false
 
     func serialized() -> Data {
         let reason = [200: "OK", 202: "Accepted", 401: "Unauthorized", 403: "Forbidden", 404: "Not Found", 405: "Method Not Allowed"][status] ?? "OK"
-        var head = "HTTP/1.1 \(status) \(reason)\r\nContent-Type: \(contentType)\r\nContent-Length: \(body.count)\r\nConnection: close\r\n"
+        var head = "HTTP/1.1 \(status) \(reason)\r\nContent-Type: \(contentType)\r\nContent-Length: \(body.count)\r\nConnection: \(keepAlive ? "keep-alive" : "close")\r\n"
         for (key, value) in headers { head += "\(key): \(value)\r\n" }
         head += "\r\n"
         return Data(head.utf8) + body

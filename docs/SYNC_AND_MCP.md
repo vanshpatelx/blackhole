@@ -49,7 +49,6 @@ Black Hole runs a local MCP server. Any MCP client on the Mac can then work with
 **How it runs**
 
 - **Shipped in v0.2.** The running app hosts the server on `127.0.0.1` over MCP **Streamable HTTP** (plain JSON responses, no SSE), protected by a random token. Going through the app, not the database file, means changes show up in the notch instantly and there are no two-writers problems.
-- The app bundle also ships a tiny `blackhole-mcp` command (stdio) for clients that only support stdio. It forwards to the local HTTP endpoint and can launch the app if it isn't running.
 - Implemented directly (it's small JSON-RPC) rather than with the [Swift MCP SDK](https://github.com/modelcontextprotocol/swift-sdk), to keep the app dependency-free.
 - **Settings → Integrations → MCP**: an on/off switch (off by default), "Copy config for Claude Desktop / Cursor / Claude Code", and "Regenerate token".
 - Planned: mark writes made through MCP in the UI (a small ✦ on the task) so you can see what an assistant changed.

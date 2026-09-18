@@ -20,11 +20,6 @@ targets:
     type: application
     platform: macOS
     sources: [BlackHole]
-    dependencies:
-      - target: blackhole-mcp
-        embed: true
-        copy:
-          destination: executables
     entitlements:
       path: BlackHole/Support/BlackHole.entitlements
       properties:
@@ -47,15 +42,6 @@ targets:
         PRODUCT_MODULE_NAME: BlackHole
         PRODUCT_BUNDLE_IDENTIFIER: app.getblackhole.mac
         GENERATE_INFOPLIST_FILE: NO
-  blackhole-mcp:
-    type: tool
-    platform: macOS
-    sources: [BlackHoleMCP]
-    settings:
-      base:
-        PRODUCT_NAME: blackhole-mcp
-        PRODUCT_BUNDLE_IDENTIFIER: app.getblackhole.mcp
-        SKIP_INSTALL: YES
   BlackHoleTests:
     type: bundle.unit-test
     platform: macOS

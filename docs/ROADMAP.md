@@ -13,6 +13,14 @@
 - One MCP URL to paste into any client, private over Tailscale or public through a tunnel
 - See [SYNC_AND_MCP.md](SYNC_AND_MCP.md)
 
+## v0.2.1: permanent addresses and polish ✅
+- One switch turns on AI access and gets a permanent address (mcp-xxxx.getblackhole.app)
+- Enrollment Worker in `server/`; the tunnel client downloads itself, no Homebrew
+- Live timer island in the notch, glass floating button with Holey's moods
+- Search in today's tasks, wider timer and notepad
+- Focusing a task with no time limit counts up instead of assuming 25 minutes
+- SwiftLint, SwiftFormat, pre-commit hook and a CI lint job
+
 ## v0.3: multi-device sync, bring your own backend
 - Sync foundation: change tracking, soft deletes, last-write-wins conflict handling
 - Supabase provider (hosted or self-hosted): paste a URL and key, sign in, done

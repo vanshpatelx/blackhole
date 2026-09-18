@@ -12,6 +12,14 @@
 <meta property="og:url" content="https://getblackhole.app">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="stylesheet" href="style.css">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"SoftwareApplication","name":"Black Hole",
+"applicationCategory":"ProductivityApplication","operatingSystem":"macOS 14 or later",
+"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},
+"url":"https://getblackhole.app","downloadUrl":"https://github.com/vanshpatelx/blackhole/releases/latest",
+"license":"https://github.com/vanshpatelx/blackhole/blob/main/LICENSE",
+"description":"Tasks, a focus timer, notes and your calendar in your Mac's notch. Works with Claude, ChatGPT and Cursor over MCP."}
+</script>
 </head>
 <body>
 
@@ -22,7 +30,7 @@
   </div>
 
   <!-- The page's own notch is the demo: hover it and the workspace drops in, like the app. -->
-  <div class="notch" role="button" tabindex="0" aria-label="Open the workspace demo">
+  <div class="notch" role="button" tabindex="0" aria-expanded="false" aria-controls="demo-workspace" aria-label="Open the workspace demo">
     <span class="notch-label">Click here ↓</span>
     <div class="demo-island">
       <svg class="demo-ring" viewBox="0 0 24 24" aria-hidden="true">
@@ -41,15 +49,18 @@
   </div>
 </div>
 
-<div class="workspace">
+<div class="workspace" id="demo-workspace">
     <div class="panel-drop">
         <div class="demo-top">
           <span class="demo-brand"><img src="icon.png" width="18" height="18" alt=""> Black Hole</span>
-          <span class="demo-tabs"><b>Workspace</b><span>Insights</span><span>Settings</span>
+          <span class="demo-tabs">
+            <button class="demo-tab is-on" data-tab="workspace">Workspace</button>
+            <button class="demo-tab" data-tab="insights">Insights</button>
             <button class="demo-close" aria-label="Close">✕</button>
           </span>
         </div>
 
+        <div class="demo-view" data-view="workspace">
         <div class="demo-cards">
           <div class="card tasks demo-card">
             <div class="demo-head">Today's tasks <span class="demo-count">0 / 3</span></div>
@@ -84,6 +95,34 @@
             <div class="demo-foot">Connected</div>
           </div>
         </div>
+        </div>
+
+        <div class="demo-view" data-view="insights" hidden>
+          <div class="demo-insights">
+            <div class="card tasks demo-card">
+              <div class="demo-head">Last 7 days</div>
+              <div class="demo-big">6h 50m</div>
+              <div class="demo-sub">Time focused</div>
+              <div class="demo-stats">
+                <span>Focus time <b>6h 50m</b></span>
+                <span>Active days <b>6 of 7</b></span>
+                <span>Current streak <b>4d</b></span>
+              </div>
+            </div>
+            <div class="card timer demo-card">
+              <div class="demo-head">Focus minutes</div>
+              <div class="demo-chart" role="img" aria-label="Bar chart of focus minutes over the last seven days">
+                <span style="height: 22%"><i>Fri</i></span>
+                <span style="height: 48%"><i>Sat</i></span>
+                <span style="height: 8%"><i>Sun</i></span>
+                <span style="height: 18%"><i>Mon</i></span>
+                <span style="height: 72%"><i>Tue</i></span>
+                <span style="height: 92%"><i>Wed</i></span>
+                <span style="height: 34%"><i>Thu</i></span>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
 </div>
@@ -95,7 +134,7 @@
     <p class="sub">Tasks, a focus timer, a daily notepad and today's calendar, living in your Mac's notch.</p>
     <div class="actions">
       <a class="button primary" href="https://github.com/vanshpatelx/blackhole/releases/latest/download/BlackHole.dmg">Download for Mac</a>
-      <a class="button ghost" href="https://github.com/vanshpatelx/blackhole">View source</a>
+      <a class="button ghost" href="https://github.com/vanshpatelx/blackhole">View source <span class="version" data-version>·</span></a>
     </div>
     <p class="fine">macOS 14 or later · Apple silicon · no account, no tracking</p>
 

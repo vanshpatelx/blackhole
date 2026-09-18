@@ -11,6 +11,9 @@
     if (!stage.contains(document.activeElement)) page.classList.remove('open');
   };
 
+  const syncExpanded = () => notch.setAttribute('aria-expanded', String(page.classList.contains('open')));
+  new MutationObserver(syncExpanded).observe(page, { attributes: true, attributeFilter: ['class'] });
+
   notch.addEventListener('mouseenter', open);
   notch.addEventListener('click', () => page.classList.toggle('open'));
   notch.addEventListener('keydown', (e) => {
@@ -19,6 +22,16 @@
   stage.addEventListener('mouseleave', close);
   stage.querySelector('.demo-close').addEventListener('click', () => page.classList.remove('open'));
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape') page.classList.remove('open'); });
+
+  /* ---- tabs: workspace and insights, like the app ---- */
+  const tabs = [...stage.querySelectorAll('.demo-tab')];
+  const views = [...stage.querySelectorAll('.demo-view')];
+  tabs.forEach((tab) => {
+    tab.addEventListener('click', () => {
+      tabs.forEach((t) => t.classList.toggle('is-on', t === tab));
+      views.forEach((v) => { v.hidden = v.dataset.view !== tab.dataset.tab; });
+    });
+  });
 
   /* ---- tasks ---- */
   const list = stage.querySelector('.demo-tasks');
@@ -113,7 +126,17 @@
   };
   note.addEventListener('input', countWords);
 
+  /* ---- show the version next to "View source" ---- */
+  const version = document.querySelector('[data-version]');
+  if (version) {
+    fetch('https://api.github.com/repos/vanshpatelx/blackhole/releases/latest')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((release) => { if (release?.tag_name) version.textContent = `· ${release.tag_name}`; })
+      .catch(() => { version.textContent = ''; });
+  }
+
   refreshCount();
   paint();
   countWords();
+  syncExpanded();
 })();

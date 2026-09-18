@@ -75,7 +75,9 @@ struct TimerCard: View {
         }
     }
 
-    private var taskTitle: String? { focus.taskID.flatMap { actions.task(with: $0)?.title } }
+    private var taskTitle: String? {
+        focus.taskID.flatMap { actions.task(with: $0)?.title }
+    }
 
     private var stateLabel: String {
         switch focus.phase {

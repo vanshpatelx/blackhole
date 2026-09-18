@@ -7,7 +7,7 @@ enum Tailscale {
         let candidates = [
             "/usr/local/bin/tailscale",
             "/opt/homebrew/bin/tailscale",
-            "/Applications/Tailscale.app/Contents/MacOS/Tailscale",
+            "/Applications/Tailscale.app/Contents/MacOS/Tailscale"
         ]
         return candidates.first { FileManager.default.isExecutableFile(atPath: $0) }
     }
@@ -24,8 +24,12 @@ enum Tailscale {
         do { try proc.run() } catch { return nil }
 
         let deadline = Date().addingTimeInterval(timeout)
-        while proc.isRunning && Date() < deadline { usleep(50_000) }
-        if proc.isRunning { proc.terminate() }
+        while proc.isRunning, Date() < deadline {
+            usleep(50000)
+        }
+        if proc.isRunning {
+            proc.terminate()
+        }
         let output = String(decoding: pipe.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
         return output.trimmingCharacters(in: .whitespacesAndNewlines)
     }
@@ -46,7 +50,9 @@ enum Tailscale {
         return name.hasSuffix(".") ? String(name.dropLast()) : name
     }
 
-    static var isAvailable: Bool { dnsName != nil }
+    static var isAvailable: Bool {
+        dnsName != nil
+    }
 
     /// Serves the local port on a public HTTPS URL that never changes.
     static func startFunnel(port: UInt16) -> URL? {

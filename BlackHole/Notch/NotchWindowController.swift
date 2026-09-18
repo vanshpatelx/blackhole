@@ -22,8 +22,13 @@ final class NotchPanel: NSPanel {
 
     /// Only takes keyboard focus while expanded so typing into tasks and notes works.
     var allowsKey = false
-    override var canBecomeKey: Bool { allowsKey }
-    override var canBecomeMain: Bool { false }
+    override var canBecomeKey: Bool {
+        allowsKey
+    }
+
+    override var canBecomeMain: Bool {
+        false
+    }
 }
 
 /// Owns the notch panel and decides when it expands and collapses.
@@ -75,8 +80,12 @@ final class NotchWindowController {
     /// Screen rect that should currently receive clicks.
     private var interactiveRect: NSRect {
         let g = model.geometry
-        if model.isExpanded { return g.rect(for: g.expandedSize) }
-        if focus.isActive { return g.rect(for: NotchRootView.collapsedSize(geometry: g, timerActive: true)) }
+        if model.isExpanded {
+            return g.rect(for: g.expandedSize)
+        }
+        if focus.isActive {
+            return g.rect(for: NotchRootView.collapsedSize(geometry: g, timerActive: true))
+        }
         return .zero
     }
 
@@ -86,11 +95,15 @@ final class NotchWindowController {
         let mouseMask: NSEvent.EventTypeMask = [.mouseMoved, .leftMouseDragged]
         if let m = NSEvent.addGlobalMonitorForEvents(matching: mouseMask, handler: { [weak self] _ in
             MainActor.assumeIsolated { self?.mouseMoved() }
-        }) { monitors.append(m) }
+        }) {
+            monitors.append(m)
+        }
         if let m = NSEvent.addLocalMonitorForEvents(matching: mouseMask, handler: { [weak self] event in
             MainActor.assumeIsolated { self?.mouseMoved() }
             return event
-        }) { monitors.append(m) }
+        }) {
+            monitors.append(m)
+        }
 
         // Clicking anywhere else dismisses the panel, including a hotkey-pinned one.
         if let m = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown], handler: { [weak self] _ in
@@ -99,7 +112,9 @@ final class NotchWindowController {
                       !self.interactiveRect.contains(NSEvent.mouseLocation) else { return }
                 self.model.collapse()
             }
-        }) { monitors.append(m) }
+        }) {
+            monitors.append(m)
+        }
 
         if let m = NSEvent.addLocalMonitorForEvents(matching: .keyDown, handler: { [weak self] event in
             guard event.keyCode == UInt16(kVK_Escape) else { return event }
@@ -109,16 +124,19 @@ final class NotchWindowController {
                 return true
             }
             return handled ? nil : event
-        }) { monitors.append(m) }
+        }) {
+            monitors.append(m)
+        }
 
         let nc = NotificationCenter.default
         nc.addObserver(forName: NSApplication.didChangeScreenParametersNotification, object: nil, queue: .main) { [weak self] _ in
             MainActor.assumeIsolated { self?.layout() }
         }
         // Screen geometry can be stale if we launched while displays were asleep or reconfiguring.
-        NSWorkspace.shared.notificationCenter.addObserver(forName: NSWorkspace.screensDidWakeNotification, object: nil, queue: .main) { [weak self] _ in
-            MainActor.assumeIsolated { self?.layout() }
-        }
+        NSWorkspace.shared.notificationCenter
+            .addObserver(forName: NSWorkspace.screensDidWakeNotification, object: nil, queue: .main) { [weak self] _ in
+                MainActor.assumeIsolated { self?.layout() }
+            }
         nc.addObserver(forName: NSMenu.didBeginTrackingNotification, object: nil, queue: .main) { [weak self] _ in
             MainActor.assumeIsolated {
                 self?.menuDepth += 1
@@ -146,9 +164,9 @@ final class NotchWindowController {
                 collapseWork = nil
             } else if collapseWork == nil, shouldAutoCollapse {
                 schedule(&collapseWork, after: leaveDelay) { [weak self] in
-                    guard let self, self.shouldAutoCollapse,
+                    guard let self, shouldAutoCollapse,
                           !self.interactiveRect.contains(NSEvent.mouseLocation) else { return }
-                    self.model.collapse()
+                    model.collapse()
                 }
             }
         } else if g.hoverZone.contains(point) || overPanel {
@@ -156,7 +174,9 @@ final class NotchWindowController {
                 schedule(&expandWork, after: hoverDelay) { [weak self] in
                     guard let self else { return }
                     let p = NSEvent.mouseLocation
-                    if self.model.geometry.hoverZone.contains(p) || self.interactiveRect.contains(p) { self.model.expand() }
+                    if model.geometry.hoverZone.contains(p) || interactiveRect.contains(p) {
+                        model.expand()
+                    }
                 }
             }
         } else {
@@ -201,7 +221,9 @@ final class NotchWindowController {
                 MainActor.assumeIsolated { self?.mouseMoved() }
             }
             panel.ignoresMouseEvents = false
-            if model.isPinned { panel.makeKey() }
+            if model.isPinned {
+                panel.makeKey()
+            }
         } else {
             panel.makeFirstResponder(nil)
             if panel.isKeyWindow {

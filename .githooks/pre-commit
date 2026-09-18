@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+# Formats and lints the Swift files you're about to commit.
+# Install with `make setup`; skips politely if the tools aren't there.
+set -euo pipefail
+
+files=$(git diff --cached --name-only --diff-filter=ACM | grep '\.swift$' || true)
+[ -z "$files" ] && exit 0
+
+if command -v swiftformat >/dev/null 2>&1; then
+  # shellcheck disable=SC2086
+  swiftformat $files --quiet
+  # shellcheck disable=SC2086
+  git add $files
+else
+  echo "pre-commit: swiftformat not found, skipping formatting (run: make setup)"
+fi
+
+if command -v swiftlint >/dev/null 2>&1; then
+  # shellcheck disable=SC2086
+  swiftlint lint --quiet $files
+else
+  echo "pre-commit: swiftlint not found, skipping lint (run: make setup)"
+fi

@@ -18,10 +18,14 @@ struct InsightsView: View {
         let selected = week.first { $0.dayKey == selectedKey }
 
         HStack(spacing: 8) {
-            SummaryCard(metric: metric, week: week, selected: selected,
-                        streak: calc.currentStreak(today: .now),
-                        onShowWeek: { withAnimation { selectedKey = nil } })
-                .frame(width: 230)
+            SummaryCard(
+                metric: metric,
+                week: week,
+                selected: selected,
+                streak: calc.currentStreak(today: .now),
+                onShowWeek: { withAnimation { selectedKey = nil } }
+            )
+            .frame(width: 230)
             WeekChartCard(metric: $metric, week: week, selectedKey: $selectedKey)
         }
     }
@@ -34,7 +38,8 @@ struct InsightsView: View {
         }
         return InsightsCalculator(
             tasks: tasks.map { .init(dayKey: $0.dayKey, isDone: $0.isDone, completedAt: $0.completedAt) },
-            sessions: records)
+            sessions: records
+        )
     }
 }
 
@@ -72,7 +77,8 @@ private struct SummaryCard: View {
                         GeometryReader { p in
                             ZStack(alignment: .leading) {
                                 Capsule().fill(Palette.well)
-                                Capsule().fill(Palette.ink).frame(width: planned == 0 ? 0 : p.size.width * Double(completed) / Double(planned))
+                                Capsule().fill(Palette.ink)
+                                    .frame(width: planned == 0 ? 0 : p.size.width * Double(completed) / Double(planned))
                             }
                         }
                         .frame(height: 4)
@@ -88,7 +94,11 @@ private struct SummaryCard: View {
                 Spacer(minLength: 6)
 
                 VStack(spacing: 8) {
-                    StatRow(icon: "clock", title: "Focus time", value: InsightsCalculator.formatDuration(week.reduce(0) { $0 + $1.focusSeconds }))
+                    StatRow(
+                        icon: "clock",
+                        title: "Focus time",
+                        value: InsightsCalculator.formatDuration(week.reduce(0) { $0 + $1.focusSeconds })
+                    )
                     StatRow(icon: "calendar", title: "Active days", value: "\(week.filter(\.isActive).count) of 7")
                     StatRow(icon: "flame", title: "Current streak", value: "\(streak)d")
                 }
@@ -133,9 +143,12 @@ private struct WeekChartCard: View {
                     CardSegmented(options: [(.tasks, "Tasks"), (.focus, "Focus")], selection: $metric)
                     Spacer()
                     if let first = week.first, let last = week.last {
-                        Text("\(first.date.formatted(.dateTime.day().month(.abbreviated))) – \(last.date.formatted(.dateTime.day().month(.abbreviated)))")
-                            .font(.system(size: 11, weight: .medium))
-                            .foregroundStyle(Palette.inkSecondary)
+                        Text(
+                            first.date.formatted(.dateTime.day().month(.abbreviated))
+                                + " – " + last.date.formatted(.dateTime.day().month(.abbreviated))
+                        )
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundStyle(Palette.inkSecondary)
                     }
                 }
 
@@ -194,7 +207,7 @@ private struct WeekChartCard: View {
                     .clipShape(RoundedRectangle(cornerRadius: 3))
             }
         }
-        .chartYScale(domain: 0...yMax)
+        .chartYScale(domain: 0 ... yMax)
         .chartXAxis {
             AxisMarks { value in
                 AxisValueLabel {

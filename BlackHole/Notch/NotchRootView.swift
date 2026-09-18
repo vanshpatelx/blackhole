@@ -22,9 +22,11 @@ struct NotchRootView: View {
         let island = !expanded && focus.isActive
         let size = expanded ? g.expandedSize : Self.collapsedSize(geometry: g, timerActive: focus.isActive)
         let visible = expanded || g.hasNotch || focus.isActive
-        let shape = NotchShape(topRadius: expanded ? NotchGeometry.flare : (island ? 9 : 7),
-                               // Concentric with the cards: card radius plus the black border.
-                               bottomRadius: expanded ? Radius.card + NotchGeometry.inset : (island ? 13 : 9))
+        let shape = NotchShape(
+            topRadius: expanded ? NotchGeometry.flare : (island ? 9 : 7),
+            // Concentric with the cards: card radius plus the black border.
+            bottomRadius: expanded ? Radius.card + NotchGeometry.inset : (island ? 13 : 9)
+        )
 
         ZStack(alignment: .top) {
             shape.fill(Palette.panel)
@@ -42,11 +44,13 @@ struct NotchRootView: View {
                 .accessibilityHidden(!expanded)
 
             if focus.isActive {
-                IslandTimer(notchWidth: g.hasNotch ? g.notchSize.width : 0,
-                            height: Self.collapsedSize(geometry: g, timerActive: true).height)
-                    .opacity(island ? 1 : 0)
-                    .animation(island ? .easeOut(duration: 0.3).delay(0.18) : .easeOut(duration: 0.12), value: island)
-                    .allowsHitTesting(false)
+                IslandTimer(
+                    notchWidth: g.hasNotch ? g.notchSize.width : 0,
+                    height: Self.collapsedSize(geometry: g, timerActive: true).height
+                )
+                .opacity(island ? 1 : 0)
+                .animation(island ? .easeOut(duration: 0.3).delay(0.18) : .easeOut(duration: 0.12), value: island)
+                .allowsHitTesting(false)
             }
         }
         .frame(width: size.width, height: size.height, alignment: .top)
@@ -118,7 +122,8 @@ private struct IslandRing: View {
 
     private static let gradient = AngularGradient(
         colors: [Color(hex: 0xFFB36B), Color(hex: 0xFF5E7E), Color(hex: 0xA77BF3), Color(hex: 0x62B6FF), Color(hex: 0xFFB36B)],
-        center: .center)
+        center: .center
+    )
 
     var body: some View {
         ZStack {

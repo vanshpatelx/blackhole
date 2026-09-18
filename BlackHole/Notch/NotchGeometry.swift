@@ -22,8 +22,13 @@ struct NotchGeometry: Equatable {
     /// Extra transparent room around the drawn shape so shadows aren't clipped.
     static let shadowPadding: CGFloat = 36
 
-    var expandedSize: CGSize { CGSize(width: Self.expandedWidth, height: topBarHeight + Self.cardsHeight) }
-    var topBarHeight: CGFloat { max(notchSize.height, 44) }
+    var expandedSize: CGSize {
+        CGSize(width: Self.expandedWidth, height: topBarHeight + Self.cardsHeight)
+    }
+
+    var topBarHeight: CGFloat {
+        max(notchSize.height, 44)
+    }
 
     var panelFrame: NSRect {
         let w = expandedSize.width + Self.shadowPadding * 2

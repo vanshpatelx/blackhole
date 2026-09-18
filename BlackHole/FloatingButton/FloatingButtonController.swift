@@ -14,7 +14,9 @@ final class FloatingButtonController {
     static let buttonSize: CGFloat = 52
     private static let shadowPad: CGFloat = 14
     private static let edgeMargin: CGFloat = 8
-    private var windowSize: CGFloat { Self.buttonSize + Self.shadowPad * 2 }
+    private var windowSize: CGFloat {
+        Self.buttonSize + Self.shadowPad * 2
+    }
 
     private let services: AppServices
     private let state = FloatingButtonState()
@@ -28,8 +30,12 @@ final class FloatingButtonController {
     init(services: AppServices) {
         self.services = services
         let size = Self.buttonSize + Self.shadowPad * 2
-        panel = NSPanel(contentRect: NSRect(x: 0, y: 0, width: size, height: size),
-                        styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
+        panel = NSPanel(
+            contentRect: NSRect(x: 0, y: 0, width: size, height: size),
+            styleMask: [.borderless, .nonactivatingPanel],
+            backing: .buffered,
+            defer: false
+        )
         panel.isOpaque = false
         panel.backgroundColor = .clear
         panel.hasShadow = false
@@ -56,12 +62,14 @@ final class FloatingButtonController {
         NotificationCenter.default.addObserver(forName: UserDefaults.didChangeNotification, object: nil, queue: .main) { [weak self] _ in
             MainActor.assumeIsolated { self?.applyVisibility() }
         }
-        NotificationCenter.default.addObserver(forName: NSApplication.didChangeScreenParametersNotification, object: nil, queue: .main) { [weak self] _ in
-            MainActor.assumeIsolated { self?.restorePosition() }
-        }
-        NSWorkspace.shared.notificationCenter.addObserver(forName: NSWorkspace.screensDidWakeNotification, object: nil, queue: .main) { [weak self] _ in
-            MainActor.assumeIsolated { self?.restorePosition() }
-        }
+        NotificationCenter.default
+            .addObserver(forName: NSApplication.didChangeScreenParametersNotification, object: nil, queue: .main) { [weak self] _ in
+                MainActor.assumeIsolated { self?.restorePosition() }
+            }
+        NSWorkspace.shared.notificationCenter
+            .addObserver(forName: NSWorkspace.screensDidWakeNotification, object: nil, queue: .main) { [weak self] _ in
+                MainActor.assumeIsolated { self?.restorePosition() }
+            }
         applyVisibility()
         scheduleIdle()
     }
@@ -70,7 +78,9 @@ final class FloatingButtonController {
 
     private func applyVisibility() {
         if Self.isEnabled {
-            if !panel.isVisible { panel.orderFrontRegardless() }
+            if !panel.isVisible {
+                panel.orderFrontRegardless()
+            }
         } else if panel.isVisible {
             panel.orderOut(nil)
         }
@@ -85,7 +95,11 @@ final class FloatingButtonController {
 
     private func click() {
         let notch = services.notch
-        notch.isFloatingOpen ? notch.closeFloating() : notch.openFloating(anchor: buttonRect)
+        if notch.isFloatingOpen {
+            notch.closeFloating()
+        } else {
+            notch.openFloating(anchor: buttonRect)
+        }
         scheduleIdle()
     }
 
@@ -234,18 +248,30 @@ final class FloatingButtonContainer: NSView {
         frame.contains(point) ? self : nil
     }
 
-    override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
+    override func acceptsFirstMouse(for event: NSEvent?) -> Bool {
+        true
+    }
 
     override func updateTrackingAreas() {
         super.updateTrackingAreas()
         trackingAreas.forEach(removeTrackingArea)
         let inset = (bounds.width - FloatingButtonController.buttonSize) / 2
-        addTrackingArea(NSTrackingArea(rect: bounds.insetBy(dx: inset, dy: inset),
-                                       options: [.mouseEnteredAndExited, .activeAlways], owner: self))
+        addTrackingArea(NSTrackingArea(
+            rect: bounds.insetBy(dx: inset, dy: inset),
+            options: [.mouseEnteredAndExited, .activeAlways],
+            owner: self
+        ))
     }
 
-    override func mouseEntered(with event: NSEvent) { onHover?(true) }
-    override func mouseExited(with event: NSEvent) { if !dragging { onHover?(false) } }
+    override func mouseEntered(with event: NSEvent) {
+        onHover?(true)
+    }
+
+    override func mouseExited(with event: NSEvent) {
+        if !dragging {
+            onHover?(false)
+        }
+    }
 
     override func mouseDown(with event: NSEvent) {
         lastMouse = NSEvent.mouseLocation
@@ -292,9 +318,14 @@ final class ClosureMenuItem: NSMenuItem {
         target = self
     }
 
-    required init(coder: NSCoder) { fatalError("init(coder:) is not supported") }
+    @available(*, unavailable)
+    required init(coder: NSCoder) {
+        fatalError("init(coder:) is not supported")
+    }
 
-    @objc private func run() { handler() }
+    @objc private func run() {
+        handler()
+    }
 }
 
 struct FloatingButtonView: View {
@@ -339,7 +370,7 @@ struct FloatingButtonView: View {
         .help("Black Hole: click to open, drag to move, right-click for more")
         .task {
             while !Task.isCancelled {
-                try? await Task.sleep(for: .seconds(Double.random(in: 25...50)))
+                try? await Task.sleep(for: .seconds(Double.random(in: 25 ... 50)))
                 guard !focus.isActive, !mascot.isSleepy, !state.hovering else { continue }
                 withAnimation { peeking = true }
                 try? await Task.sleep(for: .seconds(2.2))
@@ -349,17 +380,27 @@ struct FloatingButtonView: View {
     }
 
     private func face(timerOn: Bool, active: Bool) -> FloatingOrb.Face {
-        if mascot.isCelebrating { return .happy }
-        if timerOn { return .none }
-        if active { return .curious }
-        if mascot.isSleepy { return .sleepy }
+        if mascot.isCelebrating {
+            return .happy
+        }
+        if timerOn {
+            return .none
+        }
+        if active {
+            return .curious
+        }
+        if mascot.isSleepy {
+            return .sleepy
+        }
         return peeking ? .peek : .none
     }
 
     /// "24:31" under an hour, "1:05" (hours:minutes) above, so it always fits inside the orb.
     static func clock(_ seconds: Int) -> String {
         let s = max(0, seconds)
-        if s >= 3600 { return String(format: "%d:%02d", s / 3600, (s % 3600) / 60) }
+        if s >= 3600 {
+            return String(format: "%d:%02d", s / 3600, (s % 3600) / 60)
+        }
         return String(format: "%02d:%02d", s / 60, s % 60)
     }
 }

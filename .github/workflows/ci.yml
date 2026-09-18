@@ -6,6 +6,15 @@ on:
   pull_request:
 
 jobs:
+  lint:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install linters
+        run: brew install swiftlint swiftformat
+      - name: Check formatting and lint
+        run: make lint
+
   build-and-test:
     runs-on: macos-15
     steps:

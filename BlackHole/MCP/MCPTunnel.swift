@@ -18,6 +18,7 @@ final class MCPTunnel {
     private(set) var state: State = .off {
         didSet { onStateChange?() }
     }
+
     /// Called whenever the public URL appears or goes away.
     @ObservationIgnored var onStateChange: (() -> Void)?
 
@@ -28,8 +29,13 @@ final class MCPTunnel {
         /// Free Cloudflare quick tunnel: works anywhere, but the URL changes on every restart.
         case cloudflare
 
-        var id: Self { self }
-        var title: String { self == .tailscale ? "Tailscale Funnel (permanent URL)" : "Cloudflare quick tunnel (URL changes)" }
+        var id: Self {
+            self
+        }
+
+        var title: String {
+            self == .tailscale ? "Tailscale Funnel (permanent URL)" : "Cloudflare quick tunnel (URL changes)"
+        }
     }
 
     static let enabledKey = "mcp.remote.enabled"
@@ -38,7 +44,9 @@ final class MCPTunnel {
 
     static var provider: Provider {
         get {
-            if let raw = UserDefaults.standard.string(forKey: providerKey), let p = Provider(rawValue: raw) { return p }
+            if let raw = UserDefaults.standard.string(forKey: providerKey), let p = Provider(rawValue: raw) {
+                return p
+            }
             // Default to the permanent URL when Tailscale is available.
             return Tailscale.isAvailable ? .tailscale : .cloudflare
         }
@@ -49,10 +57,14 @@ final class MCPTunnel {
     @ObservationIgnored private var output = ""
     @ObservationIgnored private var restartWork: DispatchWorkItem?
 
-    static var isEnabled: Bool { UserDefaults.standard.bool(forKey: enabledKey) }
+    static var isEnabled: Bool {
+        UserDefaults.standard.bool(forKey: enabledKey)
+    }
 
     var isActive: Bool {
-        if case .running = state { return true }
+        if case .running = state {
+            return true
+        }
         return false
     }
 
@@ -62,14 +74,18 @@ final class MCPTunnel {
 
     /// Black Hole's own copy first, then any the user installed themselves.
     static var cloudflaredPath: String? {
-        let candidates = [TunnelInstaller.managedBinary.path, "/opt/homebrew/bin/cloudflared",
-                          "/usr/local/bin/cloudflared", "/usr/bin/cloudflared"]
+        let candidates = [
+            TunnelInstaller.managedBinary.path,
+            "/opt/homebrew/bin/cloudflared",
+            "/usr/local/bin/cloudflared",
+            "/usr/bin/cloudflared"
+        ]
         return candidates.first { FileManager.default.isExecutableFile(atPath: $0) }
     }
 
     /// Public URL a cloud connector should use; the token is part of the path because most connectors can't send headers.
     func connectorURL(token: String) -> URL? {
-        guard case .running(let base) = state else { return nil }
+        guard case let .running(base) = state else { return nil }
         return base.appending(path: "mcp").appending(path: token)
     }
 
@@ -102,7 +118,9 @@ final class MCPTunnel {
                 do {
                     _ = try await TunnelInstaller.install { fraction in
                         Task { @MainActor in
-                            if case .installing = self.state { self.state = .installing(fraction) }
+                            if case .installing = self.state {
+                                self.state = .installing(fraction)
+                            }
                         }
                     }
                     guard Self.isEnabled else { return }
@@ -149,8 +167,12 @@ final class MCPTunnel {
 
     func stop(disable: Bool = false) {
         restartWork?.cancel()
-        if disable { UserDefaults.standard.set(false, forKey: Self.enabledKey) }
-        if Self.provider == .tailscale, Tailscale.isFunnelRunning { Tailscale.stopFunnel() }
+        if disable {
+            UserDefaults.standard.set(false, forKey: Self.enabledKey)
+        }
+        if Self.provider == .tailscale, Tailscale.isFunnelRunning {
+            Tailscale.stopFunnel()
+        }
         if let process, process.isRunning {
             self.process = nil
             process.terminate()
@@ -161,10 +183,13 @@ final class MCPTunnel {
 
     private func consume(_ chunk: String) {
         output += chunk
-        if output.count > 20_000 { output = String(output.suffix(5_000)) }
+        if output.count > 20000 {
+            output = String(output.suffix(5000))
+        }
         guard state == .starting else { return }
         if let range = output.range(of: #"https://[a-z0-9-]+\.trycloudflare\.com"#, options: .regularExpression),
-           let url = URL(string: String(output[range])) {
+           let url = URL(string: String(output[range]))
+        {
             NSLog("Black Hole remote MCP tunnel ready at %@", url.absoluteString)
             state = .running(url)
         } else if output.contains("failed to request quick Tunnel") || output.contains("ERR ") && output.contains("quick Tunnel") {
@@ -197,7 +222,9 @@ final class MCPTunnel {
         try? check.run()
         check.waitUntilExit()
         let command = String(decoding: pipe.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
-        if command.contains("cloudflared") { kill(pid_t(pid), SIGTERM) }
+        if command.contains("cloudflared") {
+            kill(pid_t(pid), SIGTERM)
+        }
         UserDefaults.standard.removeObject(forKey: pidKey)
     }
 }

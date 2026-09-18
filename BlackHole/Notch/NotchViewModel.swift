@@ -5,10 +5,12 @@ import SwiftUI
 final class NotchViewModel {
     enum Tab: String, CaseIterable, Identifiable {
         case workspace = "Workspace", insights = "Insights", settings = "Settings"
-        var id: Self { self }
+        var id: Self {
+            self
+        }
     }
 
-    var geometry: NotchGeometry = NotchGeometry.preferredScreen().map(NotchGeometry.make) ??
+    var geometry: NotchGeometry = .preferredScreen().map(NotchGeometry.make) ??
         NotchGeometry(screenFrame: .zero, hasNotch: false, notchSize: CGSize(width: 190, height: 30), topY: 0)
     private(set) var isExpanded = false
     /// Opened with the hotkey: stays open until dismissed instead of closing when the mouse leaves.
@@ -54,7 +56,11 @@ final class NotchViewModel {
     }
 
     func toggleFromHotKey() {
-        isExpanded ? collapse() : expand(pinned: true)
+        if isExpanded {
+            collapse()
+        } else {
+            expand(pinned: true)
+        }
     }
 
     /// Opens the workspace next to `anchor`, a rect in screen coordinates.

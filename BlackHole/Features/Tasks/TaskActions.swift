@@ -45,10 +45,16 @@ final class TaskActions {
     func setDone(_ task: TaskItem, _ done: Bool) {
         task.isDone = done
         task.completedAt = done ? .now : nil
-        if done, focus.taskID == task.id { focus.stop() }
-        if done { Notifier.cancel(id: task.id.uuidString) }
+        if done, focus.taskID == task.id {
+            focus.stop()
+        }
+        if done {
+            Notifier.cancel(id: task.id.uuidString)
+        }
         save()
-        if done { onTaskCompleted?() }
+        if done {
+            onTaskCompleted?()
+        }
     }
 
     func rename(_ task: TaskItem, to title: String) {
@@ -75,7 +81,9 @@ final class TaskActions {
     func setReminder(_ task: TaskItem, at date: Date?) {
         task.reminderAt = date
         Notifier.cancel(id: task.id.uuidString)
-        if let date { Notifier.schedule(id: task.id.uuidString, title: task.title, body: "Reminder from Black Hole", at: date) }
+        if let date {
+            Notifier.schedule(id: task.id.uuidString, title: task.title, body: "Reminder from Black Hole", at: date)
+        }
         save()
     }
 
@@ -83,7 +91,9 @@ final class TaskActions {
         guard task.dayKey != dayKey else { return }
         task.sortIndex = (tasks(for: dayKey).map(\.sortIndex).max() ?? -1) + 1
         task.dayKey = dayKey
-        if focus.taskID == task.id { focus.stop() }
+        if focus.taskID == task.id {
+            focus.stop()
+        }
         save()
     }
 
@@ -97,7 +107,7 @@ final class TaskActions {
     @discardableResult
     func appendToNote(_ text: String, dayKey: String) -> DailyNote {
         let line = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        let note = self.note(for: dayKey) ?? {
+        let note = note(for: dayKey) ?? {
             let n = DailyNote(dayKey: dayKey)
             context.insert(n)
             return n
@@ -112,20 +122,26 @@ final class TaskActions {
         let tomorrow = DayKey.adding(days: 1, to: DayKey.today)
         task.sortIndex = (tasks(for: tomorrow).map(\.sortIndex).max() ?? -1) + 1
         task.dayKey = tomorrow
-        if focus.taskID == task.id { focus.stop() }
+        if focus.taskID == task.id {
+            focus.stop()
+        }
         save()
     }
 
     func duplicate(_ task: TaskItem) {
         let copy = TaskItem(title: task.title, dayKey: task.dayKey, sortIndex: task.sortIndex + 1)
         copy.timeLimitSec = task.timeLimitSec
-        for t in tasks(for: task.dayKey) where t.sortIndex > task.sortIndex { t.sortIndex += 1 }
+        for t in tasks(for: task.dayKey) where t.sortIndex > task.sortIndex {
+            t.sortIndex += 1
+        }
         context.insert(copy)
         save()
     }
 
     func delete(_ task: TaskItem) {
-        if focus.taskID == task.id { focus.stop() }
+        if focus.taskID == task.id {
+            focus.stop()
+        }
         Notifier.cancel(id: task.id.uuidString)
         context.delete(task)
         save()
@@ -138,7 +154,9 @@ final class TaskActions {
               let to = list.firstIndex(where: { $0.id == target.id }), from != to else { return }
         let item = list.remove(at: from)
         list.insert(item, at: to)
-        for (i, t) in list.enumerated() { t.sortIndex = i }
+        for (i, t) in list.enumerated() {
+            t.sortIndex = i
+        }
         save()
     }
 
@@ -156,7 +174,9 @@ final class TaskActions {
         save()
     }
 
-    private func save() { try? context.save() }
+    private func save() {
+        try? context.save()
+    }
 }
 
 enum Notifier {
@@ -171,8 +191,11 @@ enum Notifier {
         content.body = body
         content.sound = .default
         let comps = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute, .second], from: date)
-        let request = UNNotificationRequest(identifier: id, content: content,
-                                            trigger: UNCalendarNotificationTrigger(dateMatching: comps, repeats: false))
+        let request = UNNotificationRequest(
+            identifier: id,
+            content: content,
+            trigger: UNCalendarNotificationTrigger(dateMatching: comps, repeats: false)
+        )
         UNUserNotificationCenter.current().add(request)
     }
 
@@ -188,7 +211,9 @@ enum Notifier {
 enum ReminderPreset: CaseIterable, Identifiable {
     case in30Minutes, in1Hour, thisEvening, tomorrowMorning
 
-    var id: Self { self }
+    var id: Self {
+        self
+    }
 
     var title: String {
         switch self {

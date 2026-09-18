@@ -7,7 +7,9 @@ struct DotMatrixText: View {
     var spacing: CGFloat = 1.4
     var color: Color = Palette.ink
 
-    private var pitch: CGFloat { dot + spacing }
+    private var pitch: CGFloat {
+        dot + spacing
+    }
 
     var body: some View {
         let glyphs = text.compactMap { Self.glyphs[$0] }
@@ -30,7 +32,9 @@ struct DotMatrixText: View {
 
     static func format(seconds: Int) -> String {
         let s = max(0, seconds)
-        if s >= 3600 { return String(format: "%d:%02d:%02d", s / 3600, (s % 3600) / 60, s % 60) }
+        if s >= 3600 {
+            return String(format: "%d:%02d:%02d", s / 3600, (s % 3600) / 60, s % 60)
+        }
         return String(format: "%02d:%02d", s / 60, s % 60)
     }
 
@@ -45,6 +49,6 @@ struct DotMatrixText: View {
         "7": ["11111", "00001", "00010", "00100", "01000", "01000", "01000"],
         "8": ["01110", "10001", "10001", "01110", "10001", "10001", "01110"],
         "9": ["01110", "10001", "10001", "01111", "00001", "00010", "01100"],
-        ":": ["0", "0", "1", "0", "1", "0", "0"],
+        ":": ["0", "0", "1", "0", "1", "0", "0"]
     ]
 }

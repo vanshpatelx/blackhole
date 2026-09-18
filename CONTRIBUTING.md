@@ -5,11 +5,20 @@ Thanks for helping out! Black Hole is a small native macOS app written in Swift 
 ## Getting set up
 
 ```bash
-brew install xcodegen
+make setup      # installs xcodegen, swiftlint, swiftformat and the pre-commit hook
 make run        # build and launch
 make demo       # launch with throwaway sample data
 make test       # unit tests
 ```
+
+## Code style
+
+Formatting and linting are automated, so nobody has to argue about it in review:
+
+- **SwiftFormat** owns layout (`.swiftformat`); **SwiftLint** owns the rest (`.swiftlint.yml`).
+- `make setup` points git at `.githooks`, so committing formats your staged Swift files and lints them. (This is the Swift equivalent of husky, which is npm-only; no Node needed here.)
+- `make format` formats everything, `make lint` checks it the same way CI does.
+- CI runs `make lint` and `make test` on every pull request, so a PR that's formatted and passing locally will pass there.
 
 `BlackHole.xcodeproj` is generated from `project.yml` and isn't committed. Run `make project` after pulling changes that touch `project.yml` or add files.
 

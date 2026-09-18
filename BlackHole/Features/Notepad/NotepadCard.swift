@@ -60,7 +60,9 @@ private struct DailyNotepad: View {
         .onChange(of: notes.first?.updatedAt) { _, _ in
             // Pick up edits made outside this card, e.g. by an assistant over MCP.
             let stored = notes.first?.text ?? ""
-            if stored != lastSaved, stored != text { text = stored }
+            if stored != lastSaved, stored != text {
+                text = stored
+            }
         }
         .onChange(of: text) { _, newValue in scheduleSave(newValue) }
         .onDisappear { saveNow(text) }
@@ -142,12 +144,16 @@ struct NoteTextView: NSViewRepresentable {
         tv.string = text
     }
 
-    func makeCoordinator() -> Coordinator { Coordinator(parent: self) }
+    func makeCoordinator() -> Coordinator {
+        Coordinator(parent: self)
+    }
 
     final class Coordinator: NSObject, NSTextViewDelegate {
         var parent: NoteTextView
 
-        init(parent: NoteTextView) { self.parent = parent }
+        init(parent: NoteTextView) {
+            self.parent = parent
+        }
 
         func textDidChange(_ notification: Notification) {
             guard let tv = notification.object as? NSTextView else { return }
@@ -174,7 +180,8 @@ final class CommandReturnTextView: NSTextView {
 
     override func keyDown(with event: NSEvent) {
         if event.modifierFlags.intersection(.deviceIndependentFlagsMask) == .command,
-           event.keyCode == 36 || event.keyCode == 76 {
+           event.keyCode == 36 || event.keyCode == 76
+        {
             onCommandReturn?()
             return
         }
@@ -184,7 +191,8 @@ final class CommandReturnTextView: NSTextView {
     override func performKeyEquivalent(with event: NSEvent) -> Bool {
         if window?.firstResponder === self,
            event.modifierFlags.intersection(.deviceIndependentFlagsMask) == .command,
-           event.keyCode == 36 || event.keyCode == 76 {
+           event.keyCode == 36 || event.keyCode == 76
+        {
             onCommandReturn?()
             return true
         }

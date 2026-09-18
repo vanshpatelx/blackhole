@@ -32,7 +32,11 @@ private struct TaskList: View {
 
     init(dayKey: String) {
         self.dayKey = dayKey
-        _tasks = Query(filter: #Predicate<TaskItem> { $0.dayKey == dayKey }, sort: \.sortIndex, animation: .spring(response: 0.3, dampingFraction: 0.85))
+        _tasks = Query(
+            filter: #Predicate<TaskItem> { $0.dayKey == dayKey },
+            sort: \.sortIndex,
+            animation: .spring(response: 0.3, dampingFraction: 0.85)
+        )
     }
 
     var body: some View {
@@ -43,9 +47,16 @@ private struct TaskList: View {
                         .font(.system(size: 12, weight: .medium).monospacedDigit())
                         .foregroundStyle(Palette.inkSecondary)
                         .contentTransition(.numericText())
-                    IconButton(systemName: searching ? "xmark" : "magnifyingglass", size: 22,
-                               help: searching ? "Clear search" : "Search today's tasks") {
-                        searching ? endSearch() : startSearch()
+                    IconButton(
+                        systemName: searching ? "xmark" : "magnifyingglass",
+                        size: 22,
+                        help: searching ? "Clear search" : "Search today's tasks"
+                    ) {
+                        if searching {
+                            endSearch()
+                        } else {
+                            startSearch()
+                        }
                     }
                 }
 
@@ -86,7 +97,13 @@ private struct TaskList: View {
                         )
                 )
                 .animation(.easeOut(duration: 0.18), value: searching)
-                .onTapGesture { searching ? (searchFocused = true) : (inputFocused = true) }
+                .onTapGesture {
+                    if searching {
+                        searchFocused = true
+                    } else {
+                        inputFocused = true
+                    }
+                }
 
                 ScrollView(.vertical, showsIndicators: false) {
                     LazyVStack(spacing: 3) {
@@ -99,7 +116,7 @@ private struct TaskList: View {
                 .overlay {
                     if visibleTasks.isEmpty {
                         Text(tasks.isEmpty ? "Nothing planned yet.\nAdd the one thing that matters most."
-                                           : "No task matches \u{201C}\(search)\u{201D}.")
+                            : "No task matches \u{201C}\(search)\u{201D}.")
                             .font(.system(size: 12))
                             .multilineTextAlignment(.center)
                             .foregroundStyle(Palette.inkTertiary)
@@ -108,7 +125,7 @@ private struct TaskList: View {
 
                 CardFooter {
                     Text(isSearching ? "\(visibleTasks.count) of \(tasks.count) match"
-                                     : (tasks.count > 1 ? "Drag to reorder" : "Right-click for more"))
+                        : (tasks.count > 1 ? "Drag to reorder" : "Right-click for more"))
                 } trailing: {
                     Text(Date.now, format: .dateTime.weekday(.abbreviated).day().month(.abbreviated))
                 }
@@ -154,7 +171,9 @@ struct TaskRow: View {
     @State private var dropTargeted = false
     @FocusState private var renameFocused: Bool
 
-    private var isFocusTask: Bool { focus.taskID == task.id && focus.isActive }
+    private var isFocusTask: Bool {
+        focus.taskID == task.id && focus.isActive
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
@@ -182,7 +201,11 @@ struct TaskRow: View {
                         .focused($renameFocused)
                         .onSubmit(commitRename)
                         .onExitCommand { renaming = false }
-                        .onChange(of: renameFocused) { _, focused in if !focused { commitRename() } }
+                        .onChange(of: renameFocused) { _, focused in
+                            if !focused {
+                                commitRename()
+                            }
+                        }
                 } else {
                     Text(task.title)
                         .font(.system(size: 13))
@@ -211,13 +234,18 @@ struct TaskRow: View {
                         Label("\(limit / 60)m", systemImage: "timer")
                     }
                     if let reminder = task.reminderAt, reminder > .now {
-                        Label(reminder.formatted(date: Calendar.current.isDateInToday(reminder) ? .omitted : .abbreviated, time: .shortened), systemImage: "bell")
+                        Label(
+                            reminder.formatted(date: Calendar.current.isDateInToday(reminder) ? .omitted : .abbreviated, time: .shortened),
+                            systemImage: "bell"
+                        )
                     }
                     Spacer(minLength: 0)
                     if isFocusTask {
-                        Label(focus.phase == .paused ? "Paused" : focus.phase == .finished ? "Time's up" : "Active session",
-                              systemImage: focus.phase == .paused ? "pause.circle" : "scope")
-                            .fontWeight(.semibold)
+                        Label(
+                            focus.phase == .paused ? "Paused" : focus.phase == .finished ? "Time's up" : "Active session",
+                            systemImage: focus.phase == .paused ? "pause.circle" : "scope"
+                        )
+                        .fontWeight(.semibold)
                     }
                 }
                 .labelStyle(CompactLabelStyle())

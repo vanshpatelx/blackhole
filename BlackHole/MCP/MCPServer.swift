@@ -13,13 +13,15 @@ struct MCPConfig: Codable, Equatable {
     var tailnetURL: String?
 
     static let enabledKey = "mcp.enabled"
-    static let defaultPort: UInt16 = 52_321
+    static let defaultPort: UInt16 = 52321
 
     static var fileURL: URL {
         URL.applicationSupportDirectory.appending(path: "Black Hole/mcp.json")
     }
 
-    var endpoint: String { "http://127.0.0.1:\(port)/mcp" }
+    var endpoint: String {
+        "http://127.0.0.1:\(port)/mcp"
+    }
 
     static func load() -> MCPConfig? {
         guard let data = try? Data(contentsOf: fileURL) else { return nil }
@@ -71,28 +73,41 @@ final class MCPServer {
         config = MCPConfig(
             enabled: UserDefaults.standard.bool(forKey: MCPConfig.enabledKey),
             port: stored?.port ?? MCPConfig.defaultPort,
-            token: stored?.token ?? MCPConfig.newToken())
+            token: stored?.token ?? MCPConfig.newToken()
+        )
         tunnel.onStateChange = { [weak self] in self?.publishURLs() }
         guard allowStart else { return }
         config.save()
         if config.enabled {
             start()
-            if isTailnetEnabled { startTailnetListener() }
-            if MCPTunnel.isEnabled { tunnel.start(localPort: config.port) }
+            if isTailnetEnabled {
+                startTailnetListener()
+            }
+            if MCPTunnel.isEnabled {
+                tunnel.start(localPort: config.port)
+            }
         }
     }
 
     func setRemoteAccess(_ on: Bool) {
-        on ? tunnel.start(localPort: config.port) : tunnel.stop(disable: true)
+        if on {
+            tunnel.start(localPort: config.port)
+        } else {
+            tunnel.stop(disable: true)
+        }
     }
 
     func setRemoteProvider(_ provider: MCPTunnel.Provider) {
         MCPTunnel.provider = provider
-        if MCPTunnel.isEnabled { tunnel.start(localPort: config.port) }
+        if MCPTunnel.isEnabled {
+            tunnel.start(localPort: config.port)
+        }
     }
 
     /// Public URL to paste into claude.ai or ChatGPT connectors, when the tunnel is up.
-    var connectorURL: URL? { tunnel.connectorURL(token: config.token) }
+    var connectorURL: URL? {
+        tunnel.connectorURL(token: config.token)
+    }
 
     /// Single switch: the MCP endpoint and the public URL that web assistants need.
     func setEnabled(_ enabled: Bool) {
@@ -102,7 +117,9 @@ final class MCPServer {
         setRemoteAccess(enabled)
         if enabled {
             start()
-            if isTailnetEnabled { startTailnetListener() }
+            if isTailnetEnabled {
+                startTailnetListener()
+            }
         } else {
             stop()
             stopTailnetListener()
@@ -115,11 +132,17 @@ final class MCPServer {
     }
 
     static let tailnetKey = "mcp.tailnet.enabled"
-    var isTailnetEnabled: Bool { UserDefaults.standard.bool(forKey: Self.tailnetKey) }
+    var isTailnetEnabled: Bool {
+        UserDefaults.standard.bool(forKey: Self.tailnetKey)
+    }
 
     func setTailnetAccess(_ on: Bool) {
         UserDefaults.standard.set(on, forKey: Self.tailnetKey)
-        on ? startTailnetListener() : stopTailnetListener()
+        if on {
+            startTailnetListener()
+        } else {
+            stopTailnetListener()
+        }
     }
 
     /// URL for machines on the same tailnet (private, permanent, no public exposure).
@@ -179,10 +202,14 @@ final class MCPServer {
 
     /// For MCP clients running on this Mac. Tailscale on macOS can't reach this machine's own
     /// tailnet address, so apps here always use loopback.
-    var localURL: URL? { URL(string: "http://127.0.0.1:\(config.port)/mcp/\(config.token)") }
+    var localURL: URL? {
+        URL(string: "http://127.0.0.1:\(config.port)/mcp/\(config.token)")
+    }
 
     /// The one URL to hand to any assistant: public when the tunnel is up, loopback until then.
-    var shareURL: URL? { connectorURL ?? localURL }
+    var shareURL: URL? {
+        connectorURL ?? localURL
+    }
 
     private func start(tryPort: UInt16? = nil, attemptsLeft: Int = 5) {
         stop()
@@ -204,10 +231,12 @@ final class MCPServer {
                             self.config.port = port
                             self.config.save()
                             // The tunnel must point at the port we actually got.
-                            if MCPTunnel.isEnabled { self.tunnel.start(localPort: port) }
+                            if MCPTunnel.isEnabled {
+                                self.tunnel.start(localPort: port)
+                            }
                         }
                         self.state = .running(port: port)
-                    case .failed(let error), .waiting(let error):
+                    case let .failed(error), let .waiting(error):
                         // `.waiting` is how a busy port usually shows up; treat it as a failure.
                         self.listener?.cancel()
                         if attemptsLeft > 0 {
@@ -236,20 +265,22 @@ final class MCPServer {
 
     // MARK: Connections
 
-    nonisolated private func accept(_ connection: NWConnection) {
+    private nonisolated func accept(_ connection: NWConnection) {
         connection.start(queue: queue)
         receive(on: connection, buffer: Data())
     }
 
-    nonisolated private func receive(on connection: NWConnection, buffer: Data) {
+    private nonisolated func receive(on connection: NWConnection, buffer: Data) {
         connection.receive(minimumIncompleteLength: 1, maximumLength: 1 << 20) { [weak self] chunk, _, isComplete, error in
             guard let self else { return }
             var data = buffer
-            if let chunk { data.append(chunk) }
+            if let chunk {
+                data.append(chunk)
+            }
 
             if let request = HTTPRequest(data) {
                 // Anything after this request belongs to the next one on a reused connection.
-                let leftover = data.count > request.byteCount ? data.subdata(in: request.byteCount..<data.count) : Data()
+                let leftover = data.count > request.byteCount ? data.subdata(in: request.byteCount ..< data.count) : Data()
                 Task { @MainActor in
                     var response = self.respond(to: request)
                     response.keepAlive = request.wantsKeepAlive
@@ -264,7 +295,7 @@ final class MCPServer {
             } else if isComplete || error != nil || data.count > 4 << 20 {
                 connection.cancel()
             } else {
-                self.receive(on: connection, buffer: data)
+                receive(on: connection, buffer: data)
             }
         }
     }
@@ -274,7 +305,9 @@ final class MCPServer {
         // without a CORS preflight we never answer.
         let viaTunnel = request.headers["cf-connecting-ip"] != nil
         // Browsers send Origin; only allow local pages so a website can't drive the user's planner.
-        if !viaTunnel, let origin = request.headers["origin"], !(origin.hasPrefix("http://localhost") || origin.hasPrefix("http://127.0.0.1")) {
+        if !viaTunnel, let origin = request.headers["origin"],
+           !(origin.hasPrefix("http://localhost") || origin.hasPrefix("http://127.0.0.1"))
+        {
             return HTTPResponse(status: 403, body: Data("Forbidden origin".utf8))
         }
         let path = request.path.split(separator: "?", maxSplits: 1).first.map(String.init) ?? request.path
@@ -318,7 +351,9 @@ struct HTTPRequest {
     let byteCount: Int
 
     /// HTTP/1.1 keeps connections open unless the client says otherwise.
-    var wantsKeepAlive: Bool { headers["connection"]?.lowercased() != "close" }
+    var wantsKeepAlive: Bool {
+        headers["connection"]?.lowercased() != "close"
+    }
 
     /// Parses a complete request, or returns `nil` if more bytes are needed.
     init?(_ data: Data) {
@@ -340,7 +375,7 @@ struct HTTPRequest {
         method = String(requestLine[0]).uppercased()
         path = String(requestLine[1])
         self.headers = headers
-        body = data.subdata(in: bodyStart..<(bodyStart + length))
+        body = data.subdata(in: bodyStart ..< (bodyStart + length))
         byteCount = bodyStart + length
     }
 }
@@ -353,9 +388,21 @@ struct HTTPResponse {
     var keepAlive = false
 
     func serialized() -> Data {
-        let reason = [200: "OK", 202: "Accepted", 401: "Unauthorized", 403: "Forbidden", 404: "Not Found", 405: "Method Not Allowed"][status] ?? "OK"
-        var head = "HTTP/1.1 \(status) \(reason)\r\nContent-Type: \(contentType)\r\nContent-Length: \(body.count)\r\nConnection: \(keepAlive ? "keep-alive" : "close")\r\n"
-        for (key, value) in headers { head += "\(key): \(value)\r\n" }
+        let reason = [
+            200: "OK",
+            202: "Accepted",
+            401: "Unauthorized",
+            403: "Forbidden",
+            404: "Not Found",
+            405: "Method Not Allowed"
+        ][status] ?? "OK"
+        var head = "HTTP/1.1 \(status) \(reason)\r\n"
+        head += "Content-Type: \(contentType)\r\n"
+        head += "Content-Length: \(body.count)\r\n"
+        head += "Connection: \(keepAlive ? "keep-alive" : "close")\r\n"
+        for (key, value) in headers {
+            head += "\(key): \(value)\r\n"
+        }
         head += "\r\n"
         return Data(head.utf8) + body
     }

@@ -6,10 +6,10 @@ import SwiftUI
 struct FloatingOrb: View {
     enum Face: Equatable {
         case none
-        case curious   // hover: eyes pop in and look up
-        case peek      // random idle peek with a blink
-        case happy     // finished something
-        case sleepy    // nobody around for a while
+        case curious // hover: eyes pop in and look up
+        case peek // random idle peek with a blink
+        case happy // finished something
+        case sleepy // nobody around for a while
     }
 
     var size: CGFloat = 52
@@ -24,11 +24,20 @@ struct FloatingOrb: View {
 
     static let disk = AngularGradient(
         colors: [Color(hex: 0xFFB36B), Color(hex: 0xFF5E7E), Color(hex: 0xA77BF3), Color(hex: 0x62B6FF), Color(hex: 0xFFB36B)],
-        center: .center)
+        center: .center
+    )
 
-    private var timerMode: Bool { time != nil || finished }
-    private var coreDiameter: CGFloat { size * (timerMode ? 0.8 : (face == .none ? 0.54 : 0.66)) }
-    private var ringWidth: CGFloat { timerMode ? size * 0.055 : size * 0.065 }
+    private var timerMode: Bool {
+        time != nil || finished
+    }
+
+    private var coreDiameter: CGFloat {
+        size * (timerMode ? 0.8 : (face == .none ? 0.54 : 0.66))
+    }
+
+    private var ringWidth: CGFloat {
+        timerMode ? size * 0.055 : size * 0.065
+    }
 
     var body: some View {
         ZStack {
@@ -78,9 +87,13 @@ struct FloatingOrb: View {
             .overlay(Circle().fill(Color.black.opacity(0.22)))
             .overlay(
                 Circle().strokeBorder(
-                    LinearGradient(colors: [.white.opacity(0.55), .white.opacity(0.08), .white.opacity(0.22)],
-                                   startPoint: .top, endPoint: .bottom),
-                    lineWidth: 0.8)
+                    LinearGradient(
+                        colors: [.white.opacity(0.55), .white.opacity(0.08), .white.opacity(0.22)],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    ),
+                    lineWidth: 0.8
+                )
             )
     }
 

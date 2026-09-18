@@ -281,11 +281,8 @@ private struct MCPSettings: View {
         switch mcp.tunnel.state {
         case .starting:
             detailText("Opening tunnel…", color: Palette.inkSecondary)
-        case .notInstalled:
-            Button { copy("brew install cloudflared", label: "brew") } label: {
-                detailText(copied == "brew" ? "Copied · run it, then try again" : "Needs Tailscale or cloudflared · copy install", color: Palette.ink)
-            }
-            .buttonStyle(.plain)
+        case .installing(let fraction):
+            detailText("Setting up tunnel… \(Int(fraction * 100))%", color: Palette.inkSecondary)
         case .failed(let reason):
             detailText(reason, color: Color(hex: 0xC92A2A))
         case .running, .off:

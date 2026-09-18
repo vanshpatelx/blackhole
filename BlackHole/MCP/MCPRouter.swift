@@ -145,8 +145,10 @@ final class MCPRouter {
             if args["task_id"] != nil { taskID = try findTask(args["task_id"]).id }
             if let minutes = int(args["minutes"]) {
                 focus.start(taskID: taskID, targetSec: minutes > 0 ? minutes * 60 : nil, stopwatch: minutes == 0)
-            } else if let id = taskID, let limit = tasks.task(with: id)?.timeLimitSec {
-                focus.start(taskID: id, targetSec: limit)
+            } else if let id = taskID {
+                // Same rule as the app: a task without a time limit counts up.
+                let limit = tasks.task(with: id)?.timeLimitSec
+                focus.start(taskID: id, targetSec: limit, stopwatch: limit == nil)
             } else {
                 focus.start(taskID: taskID, targetSec: 25 * 60)
             }

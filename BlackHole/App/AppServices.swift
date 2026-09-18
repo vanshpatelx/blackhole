@@ -36,9 +36,13 @@ final class AppServices {
         } catch {
             fatalError("Could not open the Black Hole database: \(error)")
         }
-        if Self.isDemo { DemoData.seed(into: container.mainContext) }
-        focus = FocusEngine(context: container.mainContext,
-                            defaults: Self.isDemo ? UserDefaults(suiteName: "app.getblackhole.demo")! : .standard)
+        if Self.isDemo {
+            DemoData.seed(into: container.mainContext)
+        }
+        focus = FocusEngine(
+            context: container.mainContext,
+            defaults: Self.isDemo ? UserDefaults(suiteName: "app.getblackhole.demo")! : .standard
+        )
         taskActions = TaskActions(context: container.mainContext, focus: focus)
         taskActions.onTaskCompleted = { [mascot] in mascot.celebrate() }
         let notifyFinish = focus.onFinish
@@ -48,7 +52,9 @@ final class AppServices {
         }
         notch.onExpansionVisit = { [mascot] in mascot.poke() }
         dayClock.onDayChange = { [weak self] in self?.taskActions.rollOverUnfinishedTasks() }
-        if !Self.isDemo { taskActions.rollOverUnfinishedTasks() }
+        if !Self.isDemo {
+            taskActions.rollOverUnfinishedTasks()
+        }
         let router = MCPRouter(context: container.mainContext, tasks: taskActions, focus: focus, calendar: calendar)
         mcp = MCPServer(router: router, allowStart: !Self.isDemo)
     }
@@ -65,9 +71,10 @@ final class DayClock {
         NotificationCenter.default.addObserver(forName: .NSCalendarDayChanged, object: nil, queue: .main) { [weak self] _ in
             MainActor.assumeIsolated { self?.refresh() }
         }
-        NSWorkspace.shared.notificationCenter.addObserver(forName: NSWorkspace.didWakeNotification, object: nil, queue: .main) { [weak self] _ in
-            MainActor.assumeIsolated { self?.refresh() }
-        }
+        NSWorkspace.shared.notificationCenter
+            .addObserver(forName: NSWorkspace.didWakeNotification, object: nil, queue: .main) { [weak self] _ in
+                MainActor.assumeIsolated { self?.refresh() }
+            }
     }
 
     func refresh() {
@@ -86,8 +93,7 @@ extension View {
     }
 
     func blackHoleEnvironment(_ services: AppServices) -> some View {
-        self
-            .modelContainer(services.container)
+        modelContainer(services.container)
             .environment(services.dayClock)
             .environment(services.focus)
             .environment(services.calendar)

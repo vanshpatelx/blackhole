@@ -7,11 +7,16 @@ final class DashboardWindowController {
     private var window: NSWindow?
 
     func show(tab: NotchViewModel.Tab? = nil) {
-        if let tab { AppServices.shared.notch.dashboardTab = tab }
+        if let tab {
+            AppServices.shared.notch.dashboardTab = tab
+        }
         if window == nil {
-            let w = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 980, height: 560),
-                             styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView],
-                             backing: .buffered, defer: false)
+            let w = NSWindow(
+                contentRect: NSRect(x: 0, y: 0, width: 980, height: 560),
+                styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView],
+                backing: .buffered,
+                defer: false
+            )
             w.title = "Black Hole"
             w.titlebarAppearsTransparent = true
             w.isReleasedWhenClosed = false
@@ -39,7 +44,10 @@ struct DashboardView: View {
                 AppMark(size: 22)
                 Text("Black Hole").font(.system(size: 15, weight: .semibold)).foregroundStyle(.white)
                 Spacer()
-                ChromeTabs(tabs: NotchViewModel.Tab.allCases, selection: Binding(get: { model.dashboardTab }, set: { model.dashboardTab = $0 }))
+                ChromeTabs(
+                    tabs: NotchViewModel.Tab.allCases,
+                    selection: Binding(get: { model.dashboardTab }, set: { model.dashboardTab = $0 })
+                )
             }
             .padding(.leading, 70)
 

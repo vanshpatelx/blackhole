@@ -127,6 +127,8 @@ make run      # generate the Xcode project, build and launch
 | `make demo` | Launch with sample data in memory; your real data is untouched |
 | `make test` | Run the unit tests |
 | `make dmg` | Build a Release DMG into `dist/` |
+| `make setup` | Install the dev tools (XcodeGen, SwiftLint, SwiftFormat) and the pre-commit hook |
+| `make lint` / `make format` | Check or apply formatting and lint rules |
 
 Needs Xcode 16 or later. The Xcode project is generated and not committed, so edit `project.yml` for target settings.
 

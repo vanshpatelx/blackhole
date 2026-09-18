@@ -12,8 +12,10 @@ final class FloatingWorkspaceController {
     private static let screenMargin: CGFloat = 8
 
     static var size: CGSize {
-        CGSize(width: NotchGeometry.contentWidth + 2 * NotchGeometry.inset,
-               height: topBarHeight + NotchGeometry.cardsHeight)
+        CGSize(
+            width: NotchGeometry.contentWidth + 2 * NotchGeometry.inset,
+            height: topBarHeight + NotchGeometry.cardsHeight
+        )
     }
 
     private let model: NotchViewModel
@@ -45,7 +47,9 @@ final class FloatingWorkspaceController {
                       !self.panel.frame.contains(NSEvent.mouseLocation) else { return }
                 self.model.closeFloating()
             }
-        }) { monitors.append(m) }
+        }) {
+            monitors.append(m)
+        }
 
         if let m = NSEvent.addLocalMonitorForEvents(matching: .keyDown, handler: { [weak self] event in
             guard event.keyCode == UInt16(kVK_Escape) else { return event }
@@ -55,7 +59,9 @@ final class FloatingWorkspaceController {
                 return true
             }
             return handled ? nil : event
-        }) { monitors.append(m) }
+        }) {
+            monitors.append(m)
+        }
     }
 
     private func present() {

@@ -14,7 +14,9 @@ final class MascotMoodCenter {
     /// How long without a visit before the mascot dozes off.
     static let sleepAfter: TimeInterval = 90
 
-    init() { poke() }
+    init() {
+        poke()
+    }
 
     func celebrate() {
         poke()
@@ -30,7 +32,9 @@ final class MascotMoodCenter {
 
     /// Any visit (hover, opening the workspace, finishing a task) wakes it up and restarts the nap timer.
     func poke() {
-        if isSleepy { isSleepy = false }
+        if isSleepy {
+            isSleepy = false
+        }
         sleepWork?.cancel()
         let work = DispatchWorkItem { [weak self] in
             MainActor.assumeIsolated { self?.isSleepy = true }
@@ -40,9 +44,15 @@ final class MascotMoodCenter {
     }
 
     func mood(focusRunning: Bool) -> Mascot.Mood {
-        if isCelebrating { return .happy }
-        if focusRunning { return .focused }
-        if isSleepy { return .sleepy }
+        if isCelebrating {
+            return .happy
+        }
+        if focusRunning {
+            return .focused
+        }
+        if isSleepy {
+            return .sleepy
+        }
         return .normal
     }
 }

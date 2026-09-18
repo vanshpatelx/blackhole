@@ -27,9 +27,11 @@ struct EventsCard: View {
                             if !reminders.isEmpty {
                                 SectionLabel(title: "Reminders")
                                 ForEach(reminders) { task in
-                                    EventTile(title: task.title,
-                                              subtitle: task.reminderAt!.formatted(.dateTime.day().month(.abbreviated).hour().minute()),
-                                              highlight: nil)
+                                    EventTile(
+                                        title: task.title,
+                                        subtitle: task.reminderAt!.formatted(.dateTime.day().month(.abbreviated).hour().minute()),
+                                        highlight: nil
+                                    )
                                 }
                                 DottedDivider().padding(.vertical, 3)
                             }
@@ -85,10 +87,15 @@ struct EventsCard: View {
                     .foregroundStyle(Palette.inkSecondary)
             } else {
                 ForEach(calendar.events) { event in
-                    EventTile(title: event.title,
-                              subtitle: event.isAllDay ? "All day" : "\(event.start.formatted(date: .omitted, time: .shortened)) – \(event.end.formatted(date: .omitted, time: .shortened))",
-                              highlight: event.isHappening(at: now) && !event.isAllDay ? "Happening now" : nil,
-                              color: event.color)
+                    EventTile(
+                        title: event.title,
+                        subtitle: event
+                            .isAllDay ? "All day" :
+                            event.start.formatted(date: .omitted, time: .shortened)
+                            + " – " + event.end.formatted(date: .omitted, time: .shortened),
+                        highlight: event.isHappening(at: now) && !event.isAllDay ? "Happening now" : nil,
+                        color: event.color
+                    )
                 }
             }
         }
@@ -122,7 +129,9 @@ private struct SectionLabel<Trailing: View>: View {
 }
 
 extension SectionLabel where Trailing == EmptyView {
-    init(title: String) { self.init(title: title) { EmptyView() } }
+    init(title: String) {
+        self.init(title: title) { EmptyView() }
+    }
 }
 
 private struct EventTile: View {

@@ -45,10 +45,15 @@ struct SettingsView: View {
                     }
                     switch calendar.status {
                     case .notDetermined:
-                        Text("Optional. Shows today's events from Apple Calendar, including any Google, Outlook or iCloud accounts on this Mac.")
-                            .font(.system(size: 12))
-                            .foregroundStyle(Palette.inkSecondary)
-                            .fixedSize(horizontal: false, vertical: true)
+                        Text(
+                            """
+                            Optional. Shows today's events from Apple Calendar, \
+                            including any Google, Outlook or iCloud accounts on this Mac.
+                            """
+                        )
+                        .font(.system(size: 12))
+                        .foregroundStyle(Palette.inkSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
                         Button("Connect Calendar") { calendar.connect() }.buttonStyle(PillButtonStyle())
                         Spacer()
                     case .denied:
@@ -109,7 +114,11 @@ struct SettingsView: View {
 
     private func setLaunchAtLogin(_ on: Bool) {
         do {
-            if on { try SMAppService.mainApp.register() } else { try SMAppService.mainApp.unregister() }
+            if on {
+                try SMAppService.mainApp.register()
+            } else {
+                try SMAppService.mainApp.unregister()
+            }
         } catch {
             launchAtLogin = SMAppService.mainApp.status == .enabled
         }
@@ -171,10 +180,14 @@ private struct CalendarPicker: View {
                                 HStack(spacing: 7) {
                                     RoundedRectangle(cornerRadius: 3.5, style: .continuous)
                                         .fill(cal.isVisible ? cal.color : .clear)
-                                        .overlay(RoundedRectangle(cornerRadius: 3.5, style: .continuous).strokeBorder(cal.color, lineWidth: 1.5))
+                                        .overlay(RoundedRectangle(cornerRadius: 3.5, style: .continuous).strokeBorder(
+                                            cal.color,
+                                            lineWidth: 1.5
+                                        ))
                                         .overlay {
                                             if cal.isVisible {
-                                                Image(systemName: "checkmark").font(.system(size: 7, weight: .heavy)).foregroundStyle(.white)
+                                                Image(systemName: "checkmark").font(.system(size: 7, weight: .heavy))
+                                                    .foregroundStyle(.white)
                                             }
                                         }
                                         .frame(width: 13, height: 13)
@@ -211,9 +224,11 @@ private struct MCPSettings: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 7) {
-            SettingsToggleRow(title: "AI access (MCP)",
-                              help: "Let claude.ai, ChatGPT, Claude Code and Cursor work with your tasks, timer and notes",
-                              isOn: Binding(get: { mcp.config.enabled }, set: { mcp.setEnabled($0) }))
+            SettingsToggleRow(
+                title: "AI access (MCP)",
+                help: "Let claude.ai, ChatGPT, Claude Code and Cursor work with your tasks, timer and notes",
+                isOn: Binding(get: { mcp.config.enabled }, set: { mcp.setEnabled($0) })
+            )
 
             if mcp.config.enabled {
                 HStack(spacing: 5) {
@@ -250,10 +265,10 @@ private struct MCPSettings: View {
 
     private var statusText: String {
         switch mcp.tunnel.state {
-        case .installing(let fraction): "Setting up\u{2026} \(Int(fraction * 100))%"
+        case let .installing(fraction): "Setting up\u{2026} \(Int(fraction * 100))%"
         case .starting: "Connecting\u{2026}"
-        case .running(let url): url.host() ?? "Ready"
-        case .failed(let reason): reason
+        case let .running(url): url.host() ?? "Ready"
+        case let .failed(reason): reason
         case .off: "On this Mac only"
         }
     }
@@ -309,4 +324,3 @@ extension SettingsToggleRow where Trailing == EmptyView {
         self.init(title: title, help: help, isOn: isOn) { EmptyView() }
     }
 }
-

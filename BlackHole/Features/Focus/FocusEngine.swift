@@ -29,14 +29,17 @@ final class FocusEngine {
         self.defaults = defaults
         self.now = now
         restore()
-        NSWorkspace.shared.notificationCenter.addObserver(forName: NSWorkspace.willSleepNotification, object: nil, queue: .main) { [weak self] _ in
-            MainActor.assumeIsolated { self?.pause() }
-        }
+        NSWorkspace.shared.notificationCenter
+            .addObserver(forName: NSWorkspace.willSleepNotification, object: nil, queue: .main) { [weak self] _ in
+                MainActor.assumeIsolated { self?.pause() }
+            }
     }
 
     // MARK: Reading
 
-    var isActive: Bool { phase == .running || phase == .paused || phase == .finished }
+    var isActive: Bool {
+        phase == .running || phase == .paused || phase == .finished
+    }
 
     func elapsed(at date: Date) -> Double {
         accumulated + (resumedAt.map { max(0, date.timeIntervalSince($0)) } ?? 0)
@@ -52,7 +55,9 @@ final class FocusEngine {
         switch phase {
         case .idle: return presetSec ?? 0
         default:
-            if let r = remaining(at: date) { return Int(r.rounded(.up)) }
+            if let r = remaining(at: date) {
+                return Int(r.rounded(.up))
+            }
             return Int(elapsed(at: date))
         }
     }
@@ -71,7 +76,9 @@ final class FocusEngine {
 
     /// Starts a session. With no `targetSec` it uses the card's preset; `stopwatch` forces counting up.
     func start(taskID: UUID? = nil, targetSec: Int? = nil, stopwatch: Bool = false) {
-        if isActive { endSession() }
+        if isActive {
+            endSession()
+        }
         let target = stopwatch ? nil : (targetSec ?? presetSec)
         let session = FocusSession(taskID: taskID, targetSec: target)
         context.insert(session)
@@ -151,7 +158,9 @@ final class FocusEngine {
     }
 
     private func endSession() {
-        if phase == .running, let r = resumedAt { accumulated += max(0, now().timeIntervalSince(r)) }
+        if phase == .running, let r = resumedAt {
+            accumulated += max(0, now().timeIntervalSince(r))
+        }
         if let session = currentSession() {
             session.accumulatedSec = accumulated
             session.endedAt = now()
@@ -181,15 +190,23 @@ final class FocusEngine {
         persist()
     }
 
-    // Snapshot so a relaunch mid-session picks up where it left off.
+    /// Snapshot so a relaunch mid-session picks up where it left off.
     private struct Snapshot: Codable {
         var phase: Phase, targetSec: Int?, presetSec: Int?, taskID: UUID?, accumulated: Double, resumedAt: Date?, sessionID: UUID?
     }
+
     private static let snapshotKey = "focusEngine.snapshot"
 
     private func persist() {
-        let s = Snapshot(phase: phase, targetSec: targetSec, presetSec: presetSec, taskID: taskID,
-                         accumulated: accumulated, resumedAt: resumedAt, sessionID: sessionID)
+        let s = Snapshot(
+            phase: phase,
+            targetSec: targetSec,
+            presetSec: presetSec,
+            taskID: taskID,
+            accumulated: accumulated,
+            resumedAt: resumedAt,
+            sessionID: sessionID
+        )
         defaults.set(try? JSONEncoder().encode(s), forKey: Self.snapshotKey)
     }
 

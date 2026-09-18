@@ -1,0 +1,42 @@
+included:
+  - BlackHole
+  - BlackHoleTests
+excluded:
+  - build
+  - dist
+
+disabled_rules:
+  - trailing_comma        # SwiftFormat keeps these consistent
+  - todo
+  - blanket_disable_command
+  - opening_brace                   # SwiftFormat owns brace placement on wrapped conditions
+  - optional_data_string_conversion # String(decoding:as:) is non-failable and fine
+
+line_length:
+  warning: 140
+  error: 220
+  ignores_comments: true
+  ignores_urls: true
+
+file_length:
+  warning: 600
+  error: 1000
+
+type_body_length:
+  warning: 400
+  error: 600
+
+function_body_length:
+  warning: 90
+  error: 150
+
+cyclomatic_complexity:
+  warning: 20
+  error: 30
+
+identifier_name:
+  min_length: 1
+  excluded: [id, x, y, w, h, s, e, t, p, r, b, n, up, ip]
+
+nesting:
+  type_level: 2

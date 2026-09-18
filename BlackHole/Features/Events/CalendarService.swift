@@ -16,7 +16,9 @@ final class CalendarService {
         let calendarTitle: String
         let color: Color
 
-        func isHappening(at date: Date) -> Bool { start <= date && date < end }
+        func isHappening(at date: Date) -> Bool {
+            start <= date && date < end
+        }
     }
 
     struct CalendarInfo: Identifiable, Equatable {
@@ -69,7 +71,11 @@ final class CalendarService {
 
     func setVisible(_ visible: Bool, calendarID: String) {
         var hidden = hiddenIDs
-        if visible { hidden.remove(calendarID) } else { hidden.insert(calendarID) }
+        if visible {
+            hidden.remove(calendarID)
+        } else {
+            hidden.insert(calendarID)
+        }
         hiddenIDs = hidden
         loadAccounts()
         refresh()
@@ -106,10 +112,15 @@ final class CalendarService {
             .filter { $0.endDate > now }
             .sorted { ($0.isAllDay ? 0 : 1, $0.startDate) < ($1.isAllDay ? 0 : 1, $1.startDate) }
             .map { e in
-                Event(id: e.calendarItemIdentifier + "\(e.startDate.timeIntervalSince1970)",
-                      title: e.title ?? "Untitled", start: e.startDate, end: e.endDate, isAllDay: e.isAllDay,
-                      calendarTitle: e.calendar?.title ?? "",
-                      color: e.calendar?.cgColor.map { Color(cgColor: $0) } ?? Palette.ink)
+                Event(
+                    id: e.calendarItemIdentifier + "\(e.startDate.timeIntervalSince1970)",
+                    title: e.title ?? "Untitled",
+                    start: e.startDate,
+                    end: e.endDate,
+                    isAllDay: e.isAllDay,
+                    calendarTitle: e.calendar?.title ?? "",
+                    color: e.calendar?.cgColor.map { Color(cgColor: $0) } ?? Palette.ink
+                )
             }
     }
 
@@ -127,8 +138,13 @@ final class CalendarService {
                 title: Self.accountTitle(source),
                 calendars: calendars
                     .sorted { $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedAscending }
-                    .map { CalendarInfo(id: $0.calendarIdentifier, title: $0.title,
-                                        color: Color(cgColor: $0.cgColor), isVisible: !hidden.contains($0.calendarIdentifier)) })
+                    .map { CalendarInfo(
+                        id: $0.calendarIdentifier,
+                        title: $0.title,
+                        color: Color(cgColor: $0.cgColor),
+                        isVisible: !hidden.contains($0.calendarIdentifier)
+                    ) }
+            )
         }
         .sorted { $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedAscending }
     }

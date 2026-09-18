@@ -22,7 +22,9 @@ struct Mascot: View {
 
     @State private var eyesClosed = false
 
-    private var body_: CGFloat { size * 0.64 }
+    private var core: CGFloat {
+        size * 0.64
+    }
 
     var body: some View {
         ZStack {
@@ -30,19 +32,27 @@ struct Mascot: View {
 
             // Soft violet glow so the black body separates from dark backgrounds.
             Circle()
-                .fill(RadialGradient(colors: [Color(hex: 0x8B5CF6, opacity: 0.55), .clear],
-                                     center: .center, startRadius: body_ * 0.35, endRadius: body_ * 0.85))
-                .frame(width: body_ * 1.7, height: body_ * 1.7)
+                .fill(RadialGradient(
+                    colors: [Color(hex: 0x8B5CF6, opacity: 0.55), .clear],
+                    center: .center,
+                    startRadius: core * 0.35,
+                    endRadius: core * 0.85
+                ))
+                .frame(width: core * 1.7, height: core * 1.7)
 
             Circle()
-                .fill(RadialGradient(colors: [Color(hex: 0x2A2440), Color(hex: 0x050508)],
-                                     center: UnitPoint(x: 0.35, y: 0.3), startRadius: 0, endRadius: body_ * 0.7))
-                .frame(width: body_, height: body_)
+                .fill(RadialGradient(
+                    colors: [Color(hex: 0x2A2440), Color(hex: 0x050508)],
+                    center: UnitPoint(x: 0.35, y: 0.3),
+                    startRadius: 0,
+                    endRadius: core * 0.7
+                ))
+                .frame(width: core, height: core)
                 // Photon ring: the bright rim of light bent around the event horizon.
                 .overlay(photonRing)
 
             face
-                .offset(y: body_ * (lookUp && mood == .normal ? -0.1 : -0.05))
+                .offset(y: core * (lookUp && mood == .normal ? -0.1 : -0.05))
 
             ring(front: true)
 
@@ -64,7 +74,7 @@ struct Mascot: View {
         .task(id: blinks) {
             guard blinks else { return }
             while !Task.isCancelled {
-                try? await Task.sleep(for: .seconds(Double.random(in: 2.8...5.5)))
+                try? await Task.sleep(for: .seconds(Double.random(in: 2.8 ... 5.5)))
                 guard mood == .normal || mood == .focused else { continue }
                 withAnimation(.easeIn(duration: 0.07)) { eyesClosed = true }
                 try? await Task.sleep(for: .milliseconds(110))
@@ -74,54 +84,68 @@ struct Mascot: View {
     }
 
     private var photonRing: some View {
-        let rim = AngularGradient(colors: [Color(hex: 0xFFE2B8), Color(hex: 0xFF9E5E), Color(hex: 0xC084FC),
-                                           Color(hex: 0x7DD3FC), Color(hex: 0xFFE2B8)],
-                                  center: .center, angle: .degrees(-40))
+        let rim = AngularGradient(
+            colors: [
+                Color(hex: 0xFFE2B8),
+                Color(hex: 0xFF9E5E),
+                Color(hex: 0xC084FC),
+                Color(hex: 0x7DD3FC),
+                Color(hex: 0xFFE2B8)
+            ],
+            center: .center,
+            angle: .degrees(-40)
+        )
         let line = max(0.8, size * 0.016)
         return ZStack {
             Circle().stroke(rim, lineWidth: line * 2.2).blur(radius: line * 1.6).opacity(mood == .sleepy ? 0.5 : 0.9)
             Circle().stroke(rim, lineWidth: line)
         }
-        .frame(width: body_ + line, height: body_ + line)
+        .frame(width: core + line, height: core + line)
     }
 
     private var face: some View {
-        let eyeW = body_ * 0.19
-        let eyeH = body_ * 0.25
-        return VStack(spacing: body_ * 0.05) {
-            HStack(spacing: body_ * 0.14) {
+        let eyeW = core * 0.19
+        let eyeH = core * 0.25
+        return VStack(spacing: core * 0.05) {
+            HStack(spacing: core * 0.14) {
                 eye(width: eyeW, height: eyeH, isLeft: true)
                 eye(width: eyeW, height: eyeH, isLeft: false)
             }
             .frame(height: eyeH)
             ZStack {
-                HStack(spacing: body_ * 0.42) {
-                    Ellipse().fill(Color(hex: 0xFF7AA8, opacity: mood == .happy ? 0.7 : 0.45)).frame(width: body_ * 0.13, height: body_ * 0.07)
-                    Ellipse().fill(Color(hex: 0xFF7AA8, opacity: mood == .happy ? 0.7 : 0.45)).frame(width: body_ * 0.13, height: body_ * 0.07)
+                HStack(spacing: core * 0.42) {
+                    Ellipse().fill(Color(hex: 0xFF7AA8, opacity: mood == .happy ? 0.7 : 0.45)).frame(
+                        width: core * 0.13,
+                        height: core * 0.07
+                    )
+                    Ellipse().fill(Color(hex: 0xFF7AA8, opacity: mood == .happy ? 0.7 : 0.45)).frame(
+                        width: core * 0.13,
+                        height: core * 0.07
+                    )
                 }
-                .blur(radius: body_ * 0.012)
+                .blur(radius: core * 0.012)
                 mouth
             }
-            .frame(height: body_ * 0.1)
+            .frame(height: core * 0.1)
         }
     }
 
     @ViewBuilder
     private var mouth: some View {
-        let stroke = StrokeStyle(lineWidth: max(0.8, body_ * 0.035), lineCap: .round)
+        let stroke = StrokeStyle(lineWidth: max(0.8, core * 0.035), lineCap: .round)
         switch mood {
         case .normal:
             Smile().stroke(.white.opacity(0.92), style: stroke)
-                .frame(width: body_ * 0.16, height: body_ * 0.07)
+                .frame(width: core * 0.16, height: core * 0.07)
         case .happy:
             OpenSmile().fill(.white)
-                .frame(width: body_ * 0.22, height: body_ * 0.1)
+                .frame(width: core * 0.22, height: core * 0.1)
         case .focused:
             Capsule().fill(.white.opacity(0.92))
-                .frame(width: body_ * 0.11, height: max(0.8, body_ * 0.035))
+                .frame(width: core * 0.11, height: max(0.8, core * 0.035))
         case .sleepy:
-            Circle().stroke(.white.opacity(0.85), lineWidth: max(0.7, body_ * 0.028))
-                .frame(width: body_ * 0.06, height: body_ * 0.06)
+            Circle().stroke(.white.opacity(0.85), lineWidth: max(0.7, core * 0.028))
+                .frame(width: core * 0.06, height: core * 0.06)
         }
     }
 
@@ -165,8 +189,13 @@ struct Mascot: View {
 
     /// Tilted accretion ring. The back half is drawn behind the body and the front half over it.
     private func ring(front: Bool) -> some View {
-        let gradient = AngularGradient(colors: [Color(hex: 0xFFB36B), Color(hex: 0xFF5E7E), Color(hex: 0xA77BF3),
-                                                Color(hex: 0x62B6FF), Color(hex: 0xFFB36B)], center: .center)
+        let gradient = AngularGradient(colors: [
+            Color(hex: 0xFFB36B),
+            Color(hex: 0xFF5E7E),
+            Color(hex: 0xA77BF3),
+            Color(hex: 0x62B6FF),
+            Color(hex: 0xFFB36B)
+        ], center: .center)
         let width = size * 0.9
         let height = size * 0.28
         let line = max(1.2, size * 0.045)
@@ -183,7 +212,7 @@ struct Mascot: View {
         .frame(width: width, height: height)
         .rotationEffect(.degrees(-14))
         // Sits low on the body so it frames the face instead of crossing it.
-        .offset(y: body_ * 0.3)
+        .offset(y: core * 0.3)
     }
 }
 
@@ -274,8 +303,11 @@ struct MascotTile: View {
 
     var body: some View {
         RoundedRectangle(cornerRadius: size * 0.225, style: .continuous)
-            .fill(LinearGradient(colors: [Color(hex: 0x2B1F4A), Color(hex: 0x120E22), Color(hex: 0x07060D)],
-                                 startPoint: .top, endPoint: .bottom))
+            .fill(LinearGradient(
+                colors: [Color(hex: 0x2B1F4A), Color(hex: 0x120E22), Color(hex: 0x07060D)],
+                startPoint: .top,
+                endPoint: .bottom
+            ))
             .overlay(StarField(size: size))
             .overlay(Mascot(size: size * 1.02, blinks: blinks, mood: mood).offset(y: -size * 0.02))
             // Clip once, after positioning, so the glow and ring stay inside the tile.
@@ -289,19 +321,38 @@ struct MascotTile: View {
 struct StarField: View {
     var size: CGFloat
 
-    // Fixed positions so the icon renders identically every time.
-    private static let stars: [(x: CGFloat, y: CGFloat, r: CGFloat, a: Double)] = [
-        (0.12, 0.14, 0.008, 0.7), (0.26, 0.08, 0.005, 0.5), (0.78, 0.12, 0.006, 0.6), (0.9, 0.3, 0.005, 0.5),
-        (0.08, 0.55, 0.006, 0.45), (0.16, 0.86, 0.007, 0.55), (0.52, 0.93, 0.005, 0.4), (0.86, 0.8, 0.008, 0.6),
-        (0.94, 0.58, 0.004, 0.4), (0.62, 0.05, 0.004, 0.45),
+    /// Fixed positions so the icon renders identically every time.
+    private struct Star {
+        let x: CGFloat
+        let y: CGFloat
+        let radius: CGFloat
+        let alpha: Double
+    }
+
+    private static let stars: [Star] = [
+        Star(x: 0.12, y: 0.14, radius: 0.008, alpha: 0.7), Star(x: 0.26, y: 0.08, radius: 0.005, alpha: 0.5), Star(
+            x: 0.78,
+            y: 0.12,
+            radius: 0.006,
+            alpha: 0.6
+        ), Star(x: 0.9, y: 0.3, radius: 0.005, alpha: 0.5),
+        Star(x: 0.08, y: 0.55, radius: 0.006, alpha: 0.45), Star(x: 0.16, y: 0.86, radius: 0.007, alpha: 0.55), Star(
+            x: 0.52,
+            y: 0.93,
+            radius: 0.005,
+            alpha: 0.4
+        ), Star(x: 0.86, y: 0.8, radius: 0.008, alpha: 0.6),
+        Star(x: 0.94, y: 0.58, radius: 0.004, alpha: 0.4), Star(x: 0.62, y: 0.05, radius: 0.004, alpha: 0.45)
     ]
 
     var body: some View {
         Canvas { ctx, sz in
             for s in Self.stars {
-                let r = s.r * size
-                ctx.fill(Path(ellipseIn: CGRect(x: s.x * sz.width - r, y: s.y * sz.height - r, width: r * 2, height: r * 2)),
-                         with: .color(.white.opacity(s.a)))
+                let r = s.radius * size
+                ctx.fill(
+                    Path(ellipseIn: CGRect(x: s.x * sz.width - r, y: s.y * sz.height - r, width: r * 2, height: r * 2)),
+                    with: .color(.white.opacity(s.alpha))
+                )
             }
         }
     }

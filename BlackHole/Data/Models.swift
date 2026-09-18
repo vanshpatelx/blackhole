@@ -15,12 +15,12 @@ final class TaskItem {
     var createdAt: Date
 
     init(title: String, dayKey: String, sortIndex: Int) {
-        self.id = UUID()
+        id = UUID()
         self.title = title
         self.dayKey = dayKey
         self.sortIndex = sortIndex
-        self.isDone = false
-        self.createdAt = .now
+        isDone = false
+        createdAt = .now
     }
 }
 
@@ -35,10 +35,10 @@ final class FocusSession {
     var targetSec: Int?
 
     init(taskID: UUID?, targetSec: Int?) {
-        self.id = UUID()
+        id = UUID()
         self.taskID = taskID
-        self.startedAt = .now
-        self.accumulatedSec = 0
+        startedAt = .now
+        accumulatedSec = 0
         self.targetSec = targetSec
     }
 }
@@ -52,7 +52,7 @@ final class DailyNote {
     init(dayKey: String, text: String = "") {
         self.dayKey = dayKey
         self.text = text
-        self.updatedAt = .now
+        updatedAt = .now
     }
 }
 
@@ -65,9 +65,17 @@ enum DayKey {
         return f
     }()
 
-    static func of(_ date: Date) -> String { formatter.string(from: date) }
-    static func date(_ key: String) -> Date? { formatter.date(from: key) }
-    static var today: String { of(.now) }
+    static func of(_ date: Date) -> String {
+        formatter.string(from: date)
+    }
+
+    static func date(_ key: String) -> Date? {
+        formatter.date(from: key)
+    }
+
+    static var today: String {
+        of(.now)
+    }
 
     static func adding(days: Int, to key: String) -> String {
         guard let d = date(key), let n = Calendar.current.date(byAdding: .day, value: days, to: d) else { return key }

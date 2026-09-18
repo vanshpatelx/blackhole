@@ -26,7 +26,7 @@ enum TunnelInstaller {
 
         var errorDescription: String? {
             switch self {
-            case .download(let reason): "Couldn't download the tunnel: \(reason)"
+            case let .download(reason): "Couldn't download the tunnel: \(reason)"
             case .checksumMismatch: "The downloaded tunnel didn't match its checksum."
             case .extractionFailed: "Couldn't unpack the tunnel."
             }
@@ -35,7 +35,9 @@ enum TunnelInstaller {
 
     /// Downloads, verifies and unpacks the binary. Reports 0...1 progress.
     static func install(progress: @escaping @Sendable (Double) -> Void) async throws -> URL {
-        if isInstalled { return managedBinary }
+        if isInstalled {
+            return managedBinary
+        }
 
         let (tempFile, response) = try await URLSession.shared.download(from: downloadURL, delegate: nil)
         if let http = response as? HTTPURLResponse, http.statusCode != 200 {

@@ -44,14 +44,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             services.focus.start(targetSec: minutes > 0 ? minutes * 60 : nil, stopwatch: minutes == 0)
         }
         #if DEBUG
-        // `-animationLoop YES` opens and closes the notch every 1.6s, for checking animation smoothness.
-        if args.bool(forKey: "animationLoop") {
-            Timer.scheduledTimer(withTimeInterval: 1.6, repeats: true) { _ in
-                MainActor.assumeIsolated {
-                    services.notch.isExpanded ? services.notch.collapse() : services.notch.expand(pinned: true)
+            // `-animationLoop YES` opens and closes the notch every 1.6s, for checking animation smoothness.
+            if args.bool(forKey: "animationLoop") {
+                Timer.scheduledTimer(withTimeInterval: 1.6, repeats: true) { _ in
+                    MainActor.assumeIsolated {
+                        services.notch.isExpanded ? services.notch.collapse() : services.notch.expand(pinned: true)
+                    }
                 }
             }
-        }
         #endif
 
         // `-openDashboard settings` opens the full window on that tab; it stays open when you click elsewhere.

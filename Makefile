@@ -4,7 +4,22 @@ PROJECT    := BlackHole.xcodeproj
 DERIVED    := build
 DEBUG_APP  := $(DERIVED)/Build/Products/Debug/$(APP_NAME).app
 
-.PHONY: project build run demo test dmg clean
+.PHONY: setup lint format project build run demo test dmg clean
+
+## Install the dev tools and the pre-commit hook
+setup:
+	brew install xcodegen swiftlint swiftformat
+	git config core.hooksPath .githooks
+	@echo "Ready. Commits now format and lint changed Swift files."
+
+## Check formatting and lint the whole project
+lint:
+	swiftformat --lint .
+	swiftlint lint --quiet
+
+## Apply formatting
+format:
+	swiftformat .
 
 ## Generate the Xcode project from project.yml (needs `brew install xcodegen`)
 project:

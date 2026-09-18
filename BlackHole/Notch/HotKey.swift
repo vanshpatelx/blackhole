@@ -21,20 +21,31 @@ final class HotKey {
         var spec = EventTypeSpec(eventClass: OSType(kEventClassKeyboard), eventKind: UInt32(kEventHotKeyPressed))
         InstallEventHandler(GetApplicationEventTarget(), { _, event, _ in
             var hkID = EventHotKeyID()
-            GetEventParameter(event, EventParamName(kEventParamDirectObject), EventParamType(typeEventHotKeyID),
-                              nil, MemoryLayout<EventHotKeyID>.size, nil, &hkID)
+            GetEventParameter(
+                event,
+                EventParamName(kEventParamDirectObject),
+                EventParamType(typeEventHotKeyID),
+                nil,
+                MemoryLayout<EventHotKeyID>.size,
+                nil,
+                &hkID
+            )
             if let hotKey = HotKey.registry[hkID.id] {
                 DispatchQueue.main.async { hotKey.action() }
             }
             return noErr
         }, 1, &spec, nil, &handlerRef)
 
-        let hkID = EventHotKeyID(signature: OSType(0x424B484C), id: id) // "BKHL"
+        let hkID = EventHotKeyID(signature: OSType(0x424B_484C), id: id) // "BKHL"
         RegisterEventHotKey(UInt32(keyCode), UInt32(modifiers), hkID, GetApplicationEventTarget(), 0, &hotKeyRef)
     }
 
     deinit {
-        if let hotKeyRef { UnregisterEventHotKey(hotKeyRef) }
-        if let handlerRef { RemoveEventHandler(handlerRef) }
+        if let hotKeyRef {
+            UnregisterEventHotKey(hotKeyRef)
+        }
+        if let handlerRef {
+            RemoveEventHandler(handlerRef)
+        }
     }
 }

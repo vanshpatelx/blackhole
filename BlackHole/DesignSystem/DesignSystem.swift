@@ -30,11 +30,13 @@ enum Radius {
 
 extension Color {
     init(hex: UInt32, opacity: Double = 1) {
-        self.init(.sRGB,
-                  red: Double((hex >> 16) & 0xFF) / 255,
-                  green: Double((hex >> 8) & 0xFF) / 255,
-                  blue: Double(hex & 0xFF) / 255,
-                  opacity: opacity)
+        self.init(
+            .sRGB,
+            red: Double((hex >> 16) & 0xFF) / 255,
+            green: Double((hex >> 8) & 0xFF) / 255,
+            blue: Double(hex & 0xFF) / 255,
+            opacity: opacity
+        )
     }
 }
 
@@ -47,13 +49,23 @@ enum Grain {
         var pixels = [UInt8](repeating: 0, count: size * size * 4)
         var rng = SystemRandomNumberGenerator()
         for i in stride(from: 0, to: pixels.count, by: 4) {
-            let v = UInt8.random(in: 0...255, using: &rng)
+            let v = UInt8.random(in: 0 ... 255, using: &rng)
             pixels[i] = v; pixels[i + 1] = v; pixels[i + 2] = v; pixels[i + 3] = 255
         }
         let provider = CGDataProvider(data: Data(pixels) as CFData)!
-        let cg = CGImage(width: size, height: size, bitsPerComponent: 8, bitsPerPixel: 32, bytesPerRow: size * 4,
-                         space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGBitmapInfo(rawValue: CGImageAlphaInfo.noneSkipLast.rawValue),
-                         provider: provider, decode: nil, shouldInterpolate: false, intent: .defaultIntent)!
+        let cg = CGImage(
+            width: size,
+            height: size,
+            bitsPerComponent: 8,
+            bitsPerPixel: 32,
+            bytesPerRow: size * 4,
+            space: CGColorSpaceCreateDeviceRGB(),
+            bitmapInfo: CGBitmapInfo(rawValue: CGImageAlphaInfo.noneSkipLast.rawValue),
+            provider: provider,
+            decode: nil,
+            shouldInterpolate: false,
+            intent: .defaultIntent
+        )!
         // Half-size points: the tile renders at 2x pixel density on Retina for a finer grain.
         return NSImage(cgImage: cg, size: NSSize(width: size / 2, height: size / 2))
     }()
@@ -197,7 +209,8 @@ struct ChromeButtonStyle: ButtonStyle {
             .foregroundStyle(Palette.chromeText)
             .padding(.horizontal, 10)
             .frame(height: 24)
-            .background(RoundedRectangle(cornerRadius: 7, style: .continuous).fill(configuration.isPressed ? Palette.chromeSelected : Palette.chrome))
+            .background(RoundedRectangle(cornerRadius: 7, style: .continuous)
+                .fill(configuration.isPressed ? Palette.chromeSelected : Palette.chrome))
     }
 }
 

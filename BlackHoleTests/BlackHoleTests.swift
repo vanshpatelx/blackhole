@@ -1,6 +1,6 @@
+@testable import BlackHole
 import SwiftData
 import XCTest
-@testable import BlackHole
 
 final class InsightsCalculatorTests: XCTestCase {
     private let cal = Calendar.current
@@ -15,13 +15,14 @@ final class InsightsCalculatorTests: XCTestCase {
             tasks: [
                 .init(dayKey: DayKey.of(today), isDone: true, completedAt: day(0, from: today)),
                 .init(dayKey: DayKey.of(today), isDone: false, completedAt: nil),
-                .init(dayKey: DayKey.of(day(-1, from: today)), isDone: true, completedAt: day(-1, from: today)),
+                .init(dayKey: DayKey.of(day(-1, from: today)), isDone: true, completedAt: day(-1, from: today))
             ],
             sessions: [
                 .init(startedAt: day(0, from: today), seconds: 1500),
                 .init(startedAt: day(0, hour: 14, from: today), seconds: 600),
-                .init(startedAt: day(-8, from: today), seconds: 9999),
-            ])
+                .init(startedAt: day(-8, from: today), seconds: 9999)
+            ]
+        )
 
         let week = calc.week(endingOn: today)
         XCTAssertEqual(week.count, 7)
@@ -38,7 +39,7 @@ final class InsightsCalculatorTests: XCTestCase {
         let calc = InsightsCalculator(tasks: [], sessions: [
             .init(startedAt: day(-1, from: today), seconds: 600),
             .init(startedAt: day(-2, from: today), seconds: 600),
-            .init(startedAt: day(-4, from: today), seconds: 600),
+            .init(startedAt: day(-4, from: today), seconds: 600)
         ])
         XCTAssertEqual(calc.currentStreak(today: today), 2)
     }
@@ -58,13 +59,17 @@ final class FocusEngineTests: XCTestCase {
     private var defaults: UserDefaults!
 
     override func setUp() async throws {
-        container = try ModelContainer(for: TaskItem.self, FocusSession.self, DailyNote.self,
-                                       configurations: ModelConfiguration(isStoredInMemoryOnly: true))
+        container = try ModelContainer(
+            for: TaskItem.self,
+            FocusSession.self,
+            DailyNote.self,
+            configurations: ModelConfiguration(isStoredInMemoryOnly: true)
+        )
         defaults = UserDefaults(suiteName: "FocusEngineTests-\(UUID())")
     }
 
     private func makeEngine() -> FocusEngine {
-        FocusEngine(context: container.mainContext, defaults: defaults, now: { [unowned self] in self.now })
+        FocusEngine(context: container.mainContext, defaults: defaults, now: { [unowned self] in now })
     }
 
     func testCountdownPauseResumeAndAddFive() {
@@ -133,8 +138,12 @@ final class MCPRouterTests: XCTestCase {
     private var tasks: TaskActions!
 
     override func setUp() async throws {
-        container = try ModelContainer(for: TaskItem.self, FocusSession.self, DailyNote.self,
-                                       configurations: ModelConfiguration(isStoredInMemoryOnly: true))
+        container = try ModelContainer(
+            for: TaskItem.self,
+            FocusSession.self,
+            DailyNote.self,
+            configurations: ModelConfiguration(isStoredInMemoryOnly: true)
+        )
         let focus = FocusEngine(context: container.mainContext, defaults: UserDefaults(suiteName: "MCPRouterTests-\(UUID())")!)
         tasks = TaskActions(context: container.mainContext, focus: focus)
         router = MCPRouter(context: container.mainContext, tasks: tasks, focus: focus, calendar: nil)
@@ -184,11 +193,11 @@ final class MCPRouterTests: XCTestCase {
         XCTAssertEqual(listed.first?["done"] as? Bool, true)
 
         _ = try tool("update_task", ["id": id, "day": "tomorrow"])
-        XCTAssertEqual((try tool("list_tasks")["tasks"] as? [[String: Any]])?.count, 0)
-        XCTAssertEqual((try tool("list_tasks", ["day": "tomorrow"])["tasks"] as? [[String: Any]])?.count, 1)
+        XCTAssertEqual(try (tool("list_tasks")["tasks"] as? [[String: Any]])?.count, 0)
+        XCTAssertEqual(try (tool("list_tasks", ["day": "tomorrow"])["tasks"] as? [[String: Any]])?.count, 1)
 
         _ = try tool("delete_task", ["id": id])
-        XCTAssertEqual((try tool("list_tasks", ["day": "tomorrow"])["tasks"] as? [[String: Any]])?.count, 0)
+        XCTAssertEqual(try (tool("list_tasks", ["day": "tomorrow"])["tasks"] as? [[String: Any]])?.count, 0)
     }
 
     func testFocusLifecycle() throws {
@@ -201,12 +210,12 @@ final class MCPRouterTests: XCTestCase {
 
     func testFocusOnATaskCountsUpUnlessItHasATimeLimit() throws {
         let plain = try XCTUnwrap(try tool("add_task", ["title": "No limit"])["task"] as? [String: Any])
-        let started = try tool("start_focus", ["task_id": plain["id"] as! String])
+        let started = try tool("start_focus", ["task_id": XCTUnwrap(plain["id"] as? String)])
         XCTAssertEqual(started["mode"] as? String, "stopwatch")
         _ = try tool("stop_focus")
 
         let limited = try XCTUnwrap(try tool("add_task", ["title": "Has limit", "time_limit_minutes": 45])["task"] as? [String: Any])
-        let countdown = try tool("start_focus", ["task_id": limited["id"] as! String])
+        let countdown = try tool("start_focus", ["task_id": XCTUnwrap(limited["id"] as? String)])
         XCTAssertEqual(countdown["mode"] as? String, "countdown")
         XCTAssertEqual(countdown["remaining_seconds"] as? Int, 45 * 60)
         _ = try tool("stop_focus")

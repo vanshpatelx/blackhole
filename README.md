@@ -82,35 +82,21 @@ Black Hole has a built-in [Model Context Protocol](https://modelcontextprotocol.
 > *"Start a 45-minute focus session on the launch post"*
 > *"What did I focus on this week?"*
 
-Turn it on in **Settings → AI Assistants → AI access (MCP)**, then click **Copy URL** and pick where your assistant runs.
+1. Open **Settings → AI Assistants** and turn on **AI access (MCP)**. The first time, Black Hole sets up a secure web address for your Mac (it downloads a small tunnel client itself, about 20MB; no Homebrew or Terminal).
+2. Click **Copy URL**.
+3. Paste it into your assistant:
+   - **claude.ai** → Settings → Connectors → Add custom connector, no authentication
+   - **ChatGPT** → connectors in developer mode, no authentication
+   - **Claude Code** → `claude mcp add --transport http black-hole <copied-url>`
+   - **Cursor / Claude Desktop** → add an MCP server with that URL
 
-### Apps on this Mac (Claude Code, Cursor, Claude Desktop)
-
-Copy **Apps on this Mac** and add it to your client. Nothing to install:
-
-```
-claude mcp add --transport http black-hole <copied-url>
-```
-
-In Cursor or Claude Desktop, add it as an MCP server with that URL.
-
-### Web apps (claude.ai, ChatGPT)
-
-These run on their own servers and can't reach your Mac, so switch on **Web apps**. Black Hole opens a secure tunnel, downloading the tunnel client itself the first time (about 20MB, no Homebrew needed). Then copy **Web apps (claude.ai, ChatGPT)** and add it in:
-
-- **claude.ai** → Settings → Connectors → Add custom connector, no authentication
-- **ChatGPT** → connectors in developer mode, no authentication
-
-The URL changes whenever Black Hole restarts. If you use [Tailscale](https://tailscale.com), switch the provider under the Web apps row to **Tailscale Funnel** and the URL becomes permanent.
-
-### Your own machines (optional)
-
-With Tailscale installed, **My devices** serves the same MCP endpoint on your tailnet, so your other Macs, servers or agents can connect privately with nothing exposed to the internet.
+The same URL works everywhere, so there's nothing else to configure.
 
 ### Good to know
 
-- The URL carries your access token, so treat it like a password. **Reset Access Token** in the Copy menu revokes it.
-- Public and tailnet access only work while Black Hole is open.
+- The URL carries your access token, so treat it like a password. **Reset Access Token** in the Copy menu revokes it immediately.
+- It only answers while Black Hole is open, and your data stays on your Mac; the tunnel just forwards requests.
+- The address changes when Black Hole restarts, so re-copy it if a connector stops working. (If you use [Tailscale](https://tailscale.com), Black Hole uses Tailscale Funnel instead and the address is permanent.)
 - Current URLs are also written to `~/Library/Application Support/Black Hole/mcp.json`, handy for scripts.
 
 | Tool | What it does |

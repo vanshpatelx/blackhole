@@ -204,15 +204,15 @@ private struct CalendarPicker: View {
     }
 }
 
-/// Compact MCP controls: the server switch, then one row each for web apps and the user's own network.
-/// Kept tight so the whole card fits inside the notch panel.
+/// One switch and one URL: everything an assistant needs, wherever it runs.
 private struct MCPSettings: View {
     @Environment(MCPServer.self) private var mcp
-    @State private var copied: String?
+    @State private var copied = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 7) {
-            SettingsToggleRow(title: "MCP server", help: "Let Claude, Cursor and other AI apps plan your day",
+            SettingsToggleRow(title: "AI access (MCP)",
+                              help: "Let claude.ai, ChatGPT, Claude Code and Cursor work with your tasks, timer and notes",
                               isOn: Binding(get: { mcp.config.enabled }, set: { mcp.setEnabled($0) }))
 
             if mcp.config.enabled {
@@ -224,19 +224,12 @@ private struct MCPSettings: View {
                         .lineLimit(1)
                     Spacer(minLength: 4)
                     PlainMenu {
-                        if let url = mcp.localURL {
-                            Button("Apps on this Mac") { copy(url.absoluteString, label: "Copied") }
+                        if let url = mcp.shareURL {
+                            Button("Copy URL") { copy(url.absoluteString) }
                         }
-                        if let url = mcp.tailnetURL {
-                            Button("My other devices") { copy(url.absoluteString, label: "Copied") }
-                        }
-                        if let url = mcp.connectorURL {
-                            Button("Web apps (claude.ai, ChatGPT)") { copy(url.absoluteString, label: "Copied") }
-                        }
-                        Divider()
                         Button("Reset Access Token") { mcp.regenerateToken() }
                     } label: {
-                        Label(copied ?? "Copy URL", systemImage: copied == nil ? "doc.on.doc" : "checkmark")
+                        Label(copied ? "Copied" : "Copy URL", systemImage: copied ? "checkmark" : "doc.on.doc")
                             .labelStyle(CompactLabelStyle())
                             .font(.system(size: 10.5, weight: .semibold))
                             .foregroundStyle(.white)
@@ -246,87 +239,45 @@ private struct MCPSettings: View {
                     }
                 }
 
-                Rectangle().fill(Palette.inkTertiary.opacity(0.45)).frame(height: 0.5)
-
-                SettingsToggleRow(title: "Web apps", help: "Public URL for claude.ai and ChatGPT connectors",
-                                  isOn: Binding(get: { mcp.tunnel.state != .off }, set: { mcp.setRemoteAccess($0) }),
-                                  trailing: { remoteTrailing })
-                if mcp.tunnel.state != .off { remoteDetail }
-
-                if Tailscale.isAvailable {
-                    SettingsToggleRow(title: "My devices", help: "Direct access from your own machines over Tailscale, nothing public",
-                                      isOn: Binding(get: { mcp.isTailnetEnabled }, set: { mcp.setTailnetAccess($0) }),
-                                      trailing: { tailnetTrailing })
-                }
+                Text(hint)
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundStyle(Palette.inkSecondary)
+                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
             }
         }
-    }
-
-    @ViewBuilder
-    private var remoteTrailing: some View {
-        if case .running = mcp.tunnel.state, let url = mcp.connectorURL {
-            CopyLinkButton(copied: copied == "url") { copy(url.absoluteString, label: "url") }
-        }
-    }
-
-    @ViewBuilder
-    private var tailnetTrailing: some View {
-        if let url = mcp.tailnetURL {
-            CopyLinkButton(copied: copied == "tailnet") { copy(url.absoluteString, label: "tailnet") }
-        }
-    }
-
-    @ViewBuilder
-    private var remoteDetail: some View {
-        switch mcp.tunnel.state {
-        case .starting:
-            detailText("Opening tunnel…", color: Palette.inkSecondary)
-        case .installing(let fraction):
-            detailText("Setting up tunnel… \(Int(fraction * 100))%", color: Palette.inkSecondary)
-        case .failed(let reason):
-            detailText(reason, color: Color(hex: 0xC92A2A))
-        case .running, .off:
-            PlainMenu {
-                ForEach(MCPTunnel.Provider.allCases) { provider in
-                    Button(provider.title) { mcp.setRemoteProvider(provider) }
-                }
-            } label: {
-                detailText(MCPTunnel.provider == .tailscale ? "Permanent URL · Tailscale" : "Temporary URL · Cloudflare",
-                           color: Palette.inkSecondary)
-            }
-        }
-    }
-
-    private func detailText(_ text: String, color: Color) -> some View {
-        Text(text)
-            .font(.system(size: 10, weight: .medium))
-            .foregroundStyle(color)
-            .lineLimit(2)
-            .fixedSize(horizontal: false, vertical: true)
-            .padding(.leading, 1)
     }
 
     private var statusText: String {
-        switch mcp.state {
-        case .running(let port): "On · port \(port)"
+        switch mcp.tunnel.state {
+        case .installing(let fraction): "Setting up\u{2026} \(Int(fraction * 100))%"
+        case .starting: "Connecting\u{2026}"
+        case .running(let url): url.host() ?? "Ready"
         case .failed(let reason): reason
-        case .off: "Starting…"
+        case .off: "On this Mac only"
         }
     }
 
     private var statusColor: Color {
-        switch mcp.state {
+        switch mcp.tunnel.state {
         case .running: Color(hex: 0x2F9E44)
         case .failed: Color(hex: 0xC92A2A)
-        case .off: Palette.inkTertiary
+        default: Palette.inkTertiary
         }
     }
 
-    private func copy(_ text: String, label: String) {
+    private var hint: String {
+        if case .running = mcp.tunnel.state {
+            return "Paste into claude.ai or ChatGPT as a connector, or into Claude Code and Cursor."
+        }
+        return "Getting a web address so claude.ai and ChatGPT can reach your Mac."
+    }
+
+    private func copy(_ text: String) {
         NSPasteboard.general.clearContents()
         NSPasteboard.general.setString(text, forType: .string)
-        withAnimation { copied = label }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2) { withAnimation { if copied == label { copied = nil } } }
+        withAnimation { copied = true }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2) { withAnimation { copied = false } }
     }
 }
 
@@ -359,19 +310,3 @@ extension SettingsToggleRow where Trailing == EmptyView {
     }
 }
 
-private struct CopyLinkButton: View {
-    let copied: Bool
-    let action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            Image(systemName: copied ? "checkmark" : "link")
-                .font(.system(size: 9.5, weight: .bold))
-                .foregroundStyle(.white)
-                .frame(width: 22, height: 18)
-                .background(Capsule().fill(Palette.ink))
-        }
-        .buttonStyle(.plain)
-        .help("Copy URL")
-    }
-}

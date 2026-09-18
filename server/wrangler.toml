@@ -1,0 +1,22 @@
+name = "blackhole-enroll"
+main = "src/index.ts"
+compatibility_date = "2026-09-01"
+
+# Public API the app talks to. Deploy with: wrangler deploy
+routes = [
+  { pattern = "api.getblackhole.app/*", zone_name = "getblackhole.app" }
+]
+
+# Remembers which tunnel belongs to which install, so re-enrolling is idempotent.
+[[kv_namespaces]]
+binding = "INSTALLS"
+id = "REPLACE_WITH_KV_ID"
+
+[vars]
+ZONE_NAME = "getblackhole.app"
+# Subdomain that per-user hostnames live under, e.g. a7f3.mcp.getblackhole.app
+HOSTNAME_SUFFIX = "mcp.getblackhole.app"
+# Port the Black Hole app listens on locally.
+LOCAL_PORT = "52321"
+
+# Only secret: CF_API_TOKEN  (wrangler secret put CF_API_TOKEN)

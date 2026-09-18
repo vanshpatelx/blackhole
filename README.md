@@ -85,18 +85,32 @@ Black Hole has a built-in [Model Context Protocol](https://modelcontextprotocol.
    - **Claude Desktop**: paste the JSON into `~/Library/Application Support/Claude/claude_desktop_config.json`. It uses the bundled `blackhole-mcp` command, which launches Black Hole if it isn't running.
 3. Ask things like *"add my three most urgent GitHub issues to today"*, *"start a 45-minute focus session on the launch post"* or *"what did I focus on this week?"*
 
+### Your own machines and agents (Tailscale network)
+
+If you use [Tailscale](https://tailscale.com), other machines on your tailnet, including servers running your own agents, can reach Black Hole directly. Nothing is exposed to the internet and the address never changes.
+
+1. In **Settings → AI Assistants**, turn on **Tailscale network**.
+2. Click **Copy tailnet URL**: `http://100.x.y.z:52321/mcp/<token>`.
+3. Use it as the MCP URL on your other machine.
+
 ### claude.ai, ChatGPT and other web apps (remote access)
 
-Cloud-hosted assistants run on their own servers, so they can't reach `127.0.0.1` on your Mac. Black Hole can open a secure public tunnel for them using Cloudflare's free quick tunnels (no account needed):
+Cloud-hosted assistants run on their own servers and can't reach `127.0.0.1`. Turn on **Remote access** in **Settings → AI Assistants**, click **Copy connector URL**, then paste it into **claude.ai → Settings → Connectors → Add custom connector** (no authentication) or a ChatGPT connector (developer mode, no authentication).
 
-1. Install the tunnel client once: `brew install cloudflared`.
-2. In **Settings → AI Assistants**, turn on **Remote access** and click **Copy connector URL**.
-3. Paste the URL into **claude.ai → Settings → Connectors → Add custom connector** (no authentication), or into a ChatGPT connector (developer mode, no authentication).
+Two ways to get that public URL:
+
+| | **Tailscale Funnel** (default when Tailscale is installed) | **Cloudflare quick tunnel** |
+|---|---|---|
+| Setup | Tailscale signed in, Funnel enabled for your tailnet | `brew install cloudflared` |
+| URL | `https://your-mac.your-tailnet.ts.net/mcp/<token>`, **permanent** | `https://random-words.trycloudflare.com/mcp/<token>`, **changes on every restart** |
+| Good for | Connectors you set up once | Networks that can't reach `ts.net`, or no Tailscale |
+
+Switch between them from the small provider button under the Remote access switch.
 
 Good to know:
-- The connector URL contains your secret token, so **anyone with the URL can use your planner**. Treat it like a password; **Reset Access Token** in the **Copy setup for…** menu revokes it.
-- Quick tunnel URLs change each time the tunnel restarts. Update the connector if Black Hole was restarted. For a permanent URL, point your own [named Cloudflare Tunnel](https://developers.cloudflare.com/cloudflare-one/networks/connectors/cloudflare-tunnel/), ngrok domain or Tailscale Funnel at `http://127.0.0.1:52321` and use `https://your-domain/mcp/<token>`.
-- The tunnel only runs while Black Hole is open and Remote access is on.
+- The URL contains your secret token, so **anyone with it can use your planner**. Treat it like a password; **Reset Access Token** in the **Copy setup for…** menu revokes it immediately.
+- Public access only works while Black Hole is open and Remote access is on. Quick tunnel URLs die when the app restarts, so prefer Tailscale for anything you configure once.
+- The current URLs are also written to `~/Library/Application Support/Black Hole/mcp.json`, handy for scripts and agents.
 
 | Tool | What it does |
 |---|---|

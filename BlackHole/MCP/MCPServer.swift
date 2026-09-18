@@ -7,6 +7,10 @@ struct MCPConfig: Codable, Equatable {
     var enabled: Bool
     var port: UInt16
     var token: String
+    /// Current public connector URL, if remote access is on. Written out so other tools can find it.
+    var remoteURL: String?
+    /// Address other machines on the user's tailnet can use.
+    var tailnetURL: String?
 
     static let enabledKey = "mcp.enabled"
     static let defaultPort: UInt16 = 52_321
@@ -56,6 +60,9 @@ final class MCPServer {
 
     @ObservationIgnored private let router: MCPRouter
     @ObservationIgnored private var listener: NWListener?
+    /// Second listener bound to this Mac's tailnet address, so the user's other machines can connect.
+    @ObservationIgnored private var tailnetListener: NWListener?
+    private(set) var tailnetAddress: String?
     @ObservationIgnored private let queue = DispatchQueue(label: "app.getblackhole.mcp")
 
     init(router: MCPRouter, allowStart: Bool = true) {
@@ -65,16 +72,23 @@ final class MCPServer {
             enabled: UserDefaults.standard.bool(forKey: MCPConfig.enabledKey),
             port: stored?.port ?? MCPConfig.defaultPort,
             token: stored?.token ?? MCPConfig.newToken())
+        tunnel.onStateChange = { [weak self] in self?.publishURLs() }
         guard allowStart else { return }
         config.save()
         if config.enabled {
             start()
+            if isTailnetEnabled { startTailnetListener() }
             if MCPTunnel.isEnabled { tunnel.start(localPort: config.port) }
         }
     }
 
     func setRemoteAccess(_ on: Bool) {
         on ? tunnel.start(localPort: config.port) : tunnel.stop(disable: true)
+    }
+
+    func setRemoteProvider(_ provider: MCPTunnel.Provider) {
+        MCPTunnel.provider = provider
+        if MCPTunnel.isEnabled { tunnel.start(localPort: config.port) }
     }
 
     /// Public URL to paste into claude.ai or ChatGPT connectors, when the tunnel is up.
@@ -86,21 +100,81 @@ final class MCPServer {
         config.save()
         if enabled {
             start()
+            if isTailnetEnabled { startTailnetListener() }
             if MCPTunnel.isEnabled { tunnel.start(localPort: config.port) }
         } else {
             stop()
+            stopTailnetListener()
             tunnel.stop()
         }
     }
 
     func regenerateToken() {
         config.token = MCPConfig.newToken()
+        publishURLs()
+    }
+
+    static let tailnetKey = "mcp.tailnet.enabled"
+    var isTailnetEnabled: Bool { UserDefaults.standard.bool(forKey: Self.tailnetKey) }
+
+    func setTailnetAccess(_ on: Bool) {
+        UserDefaults.standard.set(on, forKey: Self.tailnetKey)
+        on ? startTailnetListener() : stopTailnetListener()
+    }
+
+    /// URL for machines on the same tailnet (private, permanent, no public exposure).
+    var tailnetURL: URL? {
+        guard let tailnetAddress else { return nil }
+        return URL(string: "http://\(tailnetAddress):\(config.port)/mcp/\(config.token)")
+    }
+
+    /// Keeps mcp.json in step with the current URLs.
+    func publishURLs() {
+        config.remoteURL = connectorURL?.absoluteString
+        config.tailnetURL = tailnetURL?.absoluteString
         config.save()
+    }
+
+    private func startTailnetListener() {
+        stopTailnetListener()
+        guard let ip = Tailscale.ipv4 else { return }
+        do {
+            let params = NWParameters.tcp
+            params.requiredLocalEndpoint = .hostPort(host: NWEndpoint.Host(ip), port: NWEndpoint.Port(rawValue: config.port)!)
+            params.allowLocalEndpointReuse = true
+            let listener = try NWListener(using: params)
+            listener.newConnectionHandler = { [weak self] connection in self?.accept(connection) }
+            listener.stateUpdateHandler = { [weak self] newState in
+                Task { @MainActor in
+                    guard let self else { return }
+                    if case .ready = newState {
+                        self.tailnetAddress = ip
+                        self.publishURLs()
+                    }
+                }
+            }
+            tailnetListener = listener
+            listener.start(queue: queue)
+        } catch {
+            tailnetAddress = nil
+        }
+    }
+
+    private func stopTailnetListener() {
+        tailnetListener?.cancel()
+        tailnetListener = nil
+        tailnetAddress = nil
+        publishURLs()
     }
 
     /// Stops the tunnel process; call when the app quits.
     func shutdown() {
         tunnel.stop()
+    }
+
+    /// Mirrors tunnel state into the config file so the URL is discoverable.
+    func tunnelStateChanged() {
+        publishURLs()
     }
 
     /// Path of the stdio bridge inside the app bundle.

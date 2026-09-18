@@ -14,10 +14,35 @@ final class MCPTunnel {
         case failed(String)
     }
 
-    private(set) var state: State = .off
+    private(set) var state: State = .off {
+        didSet { onStateChange?() }
+    }
+    /// Called whenever the public URL appears or goes away.
+    @ObservationIgnored var onStateChange: (() -> Void)?
+
+    /// How the public URL is created.
+    enum Provider: String, CaseIterable, Identifiable, Codable {
+        /// Permanent URL through the user's own tailnet. Preferred when Tailscale is set up.
+        case tailscale
+        /// Free Cloudflare quick tunnel: works anywhere, but the URL changes on every restart.
+        case cloudflare
+
+        var id: Self { self }
+        var title: String { self == .tailscale ? "Tailscale Funnel (permanent URL)" : "Cloudflare quick tunnel (URL changes)" }
+    }
 
     static let enabledKey = "mcp.remote.enabled"
+    private static let providerKey = "mcp.remote.provider"
     private static let pidKey = "mcp.remote.pid"
+
+    static var provider: Provider {
+        get {
+            if let raw = UserDefaults.standard.string(forKey: providerKey), let p = Provider(rawValue: raw) { return p }
+            // Default to the permanent URL when Tailscale is available.
+            return Tailscale.isAvailable ? .tailscale : .cloudflare
+        }
+        set { UserDefaults.standard.set(newValue.rawValue, forKey: providerKey) }
+    }
 
     @ObservationIgnored private var process: Process?
     @ObservationIgnored private var output = ""
@@ -48,6 +73,25 @@ final class MCPTunnel {
     func start(localPort: UInt16) {
         stop()
         UserDefaults.standard.set(true, forKey: Self.enabledKey)
+
+        if Self.provider == .tailscale {
+            guard Tailscale.isAvailable else {
+                state = .failed("Tailscale isn't running or signed in.")
+                return
+            }
+            state = .starting
+            let port = localPort
+            Task { @MainActor in
+                guard let url = await Task.detached(priority: .userInitiated, operation: { Tailscale.startFunnel(port: port) }).value else {
+                    self.state = .failed("Couldn't start Tailscale Funnel. Enable HTTPS and Funnel for this tailnet.")
+                    return
+                }
+                NSLog("Black Hole remote MCP tunnel ready at %@", url.absoluteString)
+                self.state = .running(url)
+            }
+            return
+        }
+
         guard let binary = Self.cloudflaredPath else {
             state = .notInstalled
             return
@@ -89,6 +133,7 @@ final class MCPTunnel {
     func stop(disable: Bool = false) {
         restartWork?.cancel()
         if disable { UserDefaults.standard.set(false, forKey: Self.enabledKey) }
+        if Self.provider == .tailscale, Tailscale.isFunnelRunning { Tailscale.stopFunnel() }
         if let process, process.isRunning {
             self.process = nil
             process.terminate()

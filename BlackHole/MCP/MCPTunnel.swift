@@ -24,6 +24,8 @@ final class MCPTunnel {
 
     /// How the public URL is created.
     enum Provider: String, CaseIterable, Identifiable, Codable {
+        /// Permanent address from Black Hole's enrollment service, served by a tunnel on this Mac.
+        case hosted
         /// Permanent URL through the user's own tailnet. Preferred when Tailscale is set up.
         case tailscale
         /// Free Cloudflare quick tunnel: works anywhere, but the URL changes on every restart.
@@ -34,7 +36,11 @@ final class MCPTunnel {
         }
 
         var title: String {
-            self == .tailscale ? "Tailscale Funnel (permanent URL)" : "Cloudflare quick tunnel (URL changes)"
+            switch self {
+            case .hosted: "Permanent address (recommended)"
+            case .tailscale: "Tailscale Funnel (permanent URL)"
+            case .cloudflare: "Temporary address (no setup)"
+            }
         }
     }
 
@@ -47,8 +53,8 @@ final class MCPTunnel {
             if let raw = UserDefaults.standard.string(forKey: providerKey), let p = Provider(rawValue: raw) {
                 return p
             }
-            // Default to the permanent URL when Tailscale is available.
-            return Tailscale.isAvailable ? .tailscale : .cloudflare
+            // A permanent address is the best default; Tailscale suits people who already run it.
+            return Tailscale.isAvailable ? .tailscale : .hosted
         }
         set { UserDefaults.standard.set(newValue.rawValue, forKey: providerKey) }
     }
@@ -93,6 +99,11 @@ final class MCPTunnel {
         stop()
         UserDefaults.standard.set(true, forKey: Self.enabledKey)
 
+        if Self.provider == .hosted {
+            startHosted(localPort: localPort)
+            return
+        }
+
         if Self.provider == .tailscale {
             guard Tailscale.isAvailable else {
                 state = .failed("Tailscale isn't running or signed in.")
@@ -133,10 +144,18 @@ final class MCPTunnel {
         }
         state = .starting
         output = ""
+        runCloudflared(
+            binary: binary,
+            arguments: ["tunnel", "--no-autoupdate", "--url", "http://127.0.0.1:\(localPort)"],
+            localPort: localPort
+        )
+    }
 
+    /// Runs cloudflared and keeps it alive while remote access is on.
+    private func runCloudflared(binary: String, arguments: [String], localPort: UInt16) {
         let proc = Process()
         proc.executableURL = URL(fileURLWithPath: binary)
-        proc.arguments = ["tunnel", "--no-autoupdate", "--url", "http://127.0.0.1:\(localPort)"]
+        proc.arguments = arguments
         let pipe = Pipe()
         proc.standardError = pipe
         proc.standardOutput = pipe
@@ -194,6 +213,42 @@ final class MCPTunnel {
             state = .running(url)
         } else if output.contains("failed to request quick Tunnel") || output.contains("ERR ") && output.contains("quick Tunnel") {
             state = .failed("Cloudflare couldn't create a tunnel. Check your internet connection.")
+        }
+    }
+
+    /// Enrolls once, then runs this Mac's own tunnel for its permanent hostname.
+    private func startHosted(localPort: UInt16) {
+        state = .starting
+        Task { @MainActor in
+            do {
+                let enrollment = try await HostedTunnel.enroll()
+                guard Self.isEnabled else { return }
+
+                let binary: String = if let existing = Self.cloudflaredPath {
+                    existing
+                } else {
+                    try await TunnelInstaller.install { fraction in
+                        Task { @MainActor in
+                            if case .starting = self.state {
+                                self.state = .installing(fraction)
+                            }
+                        }
+                    }.path
+                }
+                guard Self.isEnabled else { return }
+
+                self.runCloudflared(
+                    binary: binary,
+                    arguments: ["tunnel", "--no-autoupdate", "run", "--token", enrollment.tunnelToken],
+                    localPort: localPort
+                )
+                if let url = URL(string: "https://\(enrollment.hostname)") {
+                    NSLog("Black Hole hosted MCP tunnel ready at %@", url.absoluteString)
+                    self.state = .running(url)
+                }
+            } catch {
+                self.state = .failed(error.localizedDescription)
+            }
         }
     }
 

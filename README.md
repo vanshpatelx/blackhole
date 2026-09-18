@@ -96,7 +96,7 @@ The same URL works everywhere, so there's nothing else to configure.
 
 - The URL carries your access token, so treat it like a password. **Reset Access Token** in the Copy menu revokes it immediately.
 - It only answers while Black Hole is open, and your data stays on your Mac; the tunnel just forwards requests.
-- The address changes when Black Hole restarts, so re-copy it if a connector stops working. (If you use [Tailscale](https://tailscale.com), Black Hole uses Tailscale Funnel instead and the address is permanent.)
+- The address is permanent: Black Hole registers one for your Mac the first time you turn AI access on, and reuses it afterwards. (With [Tailscale](https://tailscale.com) installed it uses Tailscale Funnel instead, which is also permanent.)
 - Current URLs are also written to `~/Library/Application Support/Black Hole/mcp.json`, handy for scripts.
 
 | Tool | What it does |

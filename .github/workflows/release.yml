@@ -21,7 +21,9 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
-          ASSETS=("dist/BlackHole-$VERSION.dmg" "dist/BlackHole-$VERSION.dmg.sha256")
+          # BlackHole.dmg is a stable filename, so the website can always link to the newest build.
+          cp "dist/BlackHole-$VERSION.dmg" dist/BlackHole.dmg
+          ASSETS=("dist/BlackHole-$VERSION.dmg" "dist/BlackHole-$VERSION.dmg.sha256" "dist/BlackHole.dmg")
           if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
             # Release was created by hand; attach the CI-built DMG to it.
             gh release upload "$GITHUB_REF_NAME" "${ASSETS[@]}" --clobber

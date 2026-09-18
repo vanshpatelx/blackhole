@@ -15,91 +15,167 @@
 </head>
 <body>
 
-<header class="bar">
-  <a class="brand" href="/">
-    <img src="icon.png" width="28" height="28" alt="">
-    <span>Black Hole</span>
-  </a>
-  <nav>
+<!-- The page opens the way the app does: a black bar with a notch, and the workspace dropping out of it. -->
+<div class="menubar">
+  <div class="menubar-left">
+    <a class="brand" href="/"><img src="icon.png" width="22" height="22" alt=""><span>Black Hole</span></a>
+  </div>
+
+  <!-- The page's own notch is the demo: hover it and the workspace drops in, like the app. -->
+  <div class="notch" role="button" tabindex="0" aria-label="Open the workspace demo">
+    <span class="notch-label">Click here ↓</span>
+    <div class="demo-island">
+      <svg class="demo-ring" viewBox="0 0 24 24" aria-hidden="true">
+        <circle cx="12" cy="12" r="10" class="demo-ring-track"/>
+        <circle cx="12" cy="12" r="10" class="demo-ring-fill"/>
+      </svg>
+      <span class="demo-island-time">25:00</span>
+    </div>
+  </div>
+
+  <div class="menubar-right">
     <a href="#features">Features</a>
     <a href="#ai">AI apps</a>
     <a href="https://github.com/vanshpatelx/blackhole">GitHub</a>
-    <a class="cta" href="https://github.com/vanshpatelx/blackhole/releases/latest">Download</a>
-  </nav>
-</header>
+    <a class="pill" href="https://github.com/vanshpatelx/blackhole/releases/latest/download/BlackHole.dmg">Download</a>
+  </div>
+</div>
+
+<div class="workspace">
+    <div class="panel-drop">
+        <div class="demo-top">
+          <span class="demo-brand"><img src="icon.png" width="18" height="18" alt=""> Black Hole</span>
+          <span class="demo-tabs"><b>Workspace</b><span>Insights</span><span>Settings</span>
+            <button class="demo-close" aria-label="Close">✕</button>
+          </span>
+        </div>
+
+        <div class="demo-cards">
+          <div class="card tasks demo-card">
+            <div class="demo-head">Today's tasks <span class="demo-count">0 / 3</span></div>
+            <input class="demo-input" type="text" placeholder="What needs doing?" aria-label="Add a task">
+            <div class="demo-tasks">
+              <div class="demo-task"><span class="demo-check"></span><span class="demo-title">Ship the landing page</span></div>
+              <div class="demo-task"><span class="demo-check"></span><span class="demo-title">Write the launch tweet</span></div>
+              <div class="demo-task"><span class="demo-check"></span><span class="demo-title">Review open pull requests</span></div>
+            </div>
+            <div class="demo-foot">Try ticking one</div>
+          </div>
+
+          <div class="card timer demo-card center">
+            <div class="demo-clock">25:00</div>
+            <div class="demo-state">Ready</div>
+            <button class="demo-start">Start</button>
+            <div class="demo-foot">Runs in the notch</div>
+          </div>
+
+          <div class="card notepad demo-card">
+            <div class="demo-head">Notepad</div>
+            <textarea class="demo-note" aria-label="Daily notepad">Launch checklist
+- record a demo
+- post on X</textarea>
+            <div class="demo-foot demo-words">6 words</div>
+          </div>
+
+          <div class="card events demo-card">
+            <div class="demo-head">Events</div>
+            <div class="demo-event"><b>Standup</b><span>09:30 – 09:45</span></div>
+            <div class="demo-event now"><b>Design review</b><span>Happening now</span></div>
+            <div class="demo-foot">Connected</div>
+          </div>
+        </div>
+      </div>
+
+</div>
 
 <main>
   <section class="hero">
     <p class="eyebrow">Free · Open source · macOS</p>
     <h1>Your whole day,<br>one hover away.</h1>
-    <p class="sub">
-      Tasks, a focus timer, a daily notepad and today's calendar, living in your Mac's notch.
-      Hover, do the thing, get back to work.
-    </p>
+    <p class="sub">Tasks, a focus timer, a daily notepad and today's calendar, living in your Mac's notch.</p>
     <div class="actions">
-      <a class="button primary" href="https://github.com/vanshpatelx/blackhole/releases/latest">Download for Mac</a>
-      <a class="button" href="https://github.com/vanshpatelx/blackhole">View source</a>
+      <a class="button primary" href="https://github.com/vanshpatelx/blackhole/releases/latest/download/BlackHole.dmg">Download for Mac</a>
+      <a class="button ghost" href="https://github.com/vanshpatelx/blackhole">View source</a>
     </div>
     <p class="fine">macOS 14 or later · Apple silicon · no account, no tracking</p>
-    <img class="shot" src="workspace.png" alt="The Black Hole workspace dropping out of a MacBook notch, with tasks, a focus timer, a notepad and calendar events" width="1400" height="489" fetchpriority="high">
+
+    <p class="hero-hint">Try it: click the notch at the top ↑</p>
+    <img class="shot" src="workspace.png" alt="The Black Hole workspace dropping out of a MacBook notch" width="1400" height="526" fetchpriority="high">
   </section>
 
-  <section id="features" class="features">
-    <article>
-      <h2>Tasks that stay out of the way</h2>
-      <p>Add, check off, drag to reorder. Set a time limit or a reminder, move something to tomorrow, and unfinished work rolls over on its own.</p>
+  <!-- Feature cards borrow the app's own pastel cards, grain and ink text. -->
+  <section id="features" class="cards">
+    <article class="card tasks">
+      <h2><span class="dot"></span>Today's tasks</h2>
+      <p>Add, check off, drag to reorder. Time limits, reminders, move to tomorrow, and unfinished work rolls over on its own.</p>
+      <p class="card-foot">Drag to reorder</p>
     </article>
-    <article>
-      <h2>A focus timer in the notch</h2>
-      <p>Countdown or stopwatch. While it runs, the notch becomes a live island: progress on one side, time left on the other. It pauses when your Mac sleeps.</p>
+
+    <article class="card timer">
+      <h2><span class="dot"></span>Focus timer</h2>
+      <p class="clock">25:00</p>
+      <p>Countdown or stopwatch. While it runs the notch becomes a live island: progress on one side, time left on the other.</p>
+      <p class="card-foot">Pauses when your Mac sleeps</p>
     </article>
-    <article>
-      <h2>Notes that become tasks</h2>
-      <p>The daily notepad saves as you type. Press <kbd>⌘</kbd><kbd>↩</kbd> on a line and it turns into a task for today.</p>
+
+    <article class="card notepad">
+      <h2><span class="dot"></span>Daily notepad</h2>
+      <p>Saves as you type. Put the cursor on a line, press <kbd>⌘</kbd><kbd>↩</kbd>, and it becomes a task for today.</p>
+      <p class="card-foot">17 words</p>
     </article>
-    <article>
-      <h2>All your calendars</h2>
+
+    <article class="card events">
+      <h2><span class="dot"></span>Events</h2>
       <p>iCloud, Google (as many accounts as you like) and Outlook, colour-coded and read-only. Black Hole never changes your events.</p>
-    </article>
-    <article>
-      <h2>Anywhere on any display</h2>
-      <p>No notch? It opens at the top of the screen. Working on an external monitor? Drag the floating button there and the whole workspace opens beside it.</p>
-    </article>
-    <article>
-      <h2>Your day, your Mac</h2>
-      <p>Everything is stored locally. No accounts, no analytics, no sync you didn't ask for. Export a JSON backup whenever you like.</p>
+      <p class="card-foot">Connected</p>
     </article>
   </section>
 
-  <section id="ai" class="ai">
-    <div class="ai-copy">
-      <p class="eyebrow">New in 0.2</p>
-      <h2>Let Claude and ChatGPT plan your day</h2>
-      <p>
-        Turn on AI access and Black Hole gets its own secure web address. Paste it into claude.ai,
-        ChatGPT, Claude Code or Cursor, and your assistant can read and change your day.
-      </p>
-      <ul class="quotes">
-        <li>“Add my three most urgent GitHub issues to today”</li>
-        <li>“Start a 45-minute focus session on the launch post”</li>
-        <li>“What did I focus on this week?”</li>
-      </ul>
-      <p class="fine">
-        Built on the Model Context Protocol. The address is permanent, protected by a secret token,
-        and your tasks stay on your Mac.
-      </p>
+  <section class="split">
+    <div class="split-copy">
+      <h2>It follows you across displays</h2>
+      <p>No notch? The workspace opens at the top of the screen instead. On an external monitor, drag the floating button wherever you like and the whole thing opens beside it.</p>
     </div>
-    <img class="shot small" src="insights.png" alt="Insights showing focus time and completed tasks for the last seven days" width="1400" height="489" loading="lazy">
+    <img class="shot" src="floating.png" alt="The workspace opened next to the floating button on an external display" width="1400" height="571" loading="lazy">
+  </section>
+
+  <section class="split reverse">
+    <div class="split-copy">
+      <h2>See where your attention went</h2>
+      <p>Insights gathers focus time, completed against planned tasks, active days and your streak, so a busy week is easy to look back on.</p>
+    </div>
+    <img class="shot" src="insights.png" alt="Insights showing focus time and completed tasks for the last seven days" width="1400" height="526" loading="lazy">
+  </section>
+
+  <!-- The AI section is styled like the app's black panel. -->
+  <section id="ai" class="panel">
+    <p class="eyebrow">New in 0.2</p>
+    <h2>Let Claude and ChatGPT plan your day</h2>
+    <p class="panel-sub">
+      Turn on AI access and Black Hole gets its own permanent web address. Paste it into claude.ai,
+      ChatGPT, Claude Code or Cursor, and your assistant can work with your day.
+    </p>
+    <div class="prompts">
+      <p>“Add my three most urgent GitHub issues to today”</p>
+      <p>“Start a 45-minute focus session on the launch post”</p>
+      <p>“What did I focus on this week?”</p>
+    </div>
+    <p class="fine">Built on the Model Context Protocol · protected by a secret token · your tasks stay on your Mac</p>
+  </section>
+
+  <section class="holey">
+    <img src="moods.png" alt="Holey the mascot: normal, happy, focused and sleepy" width="1100" height="418" loading="lazy">
+    <div>
+      <h2>Meet Holey</h2>
+      <p>He blinks, looks up when you hover, cheers when you finish something, gets serious during a focus session, and dozes off when you've been away.</p>
+    </div>
   </section>
 
   <section class="download">
     <h2>Get Black Hole</h2>
     <p>One download, no sign-up. It lives in your notch from the moment you open it.</p>
-    <a class="button primary" href="https://github.com/vanshpatelx/blackhole/releases/latest">Download for Mac</a>
-    <p class="fine">
-      Builds aren't notarized by Apple yet, so on first launch open
-      <strong>System Settings → Privacy &amp; Security → Open Anyway</strong>.
-    </p>
+    <a class="button primary" href="https://github.com/vanshpatelx/blackhole/releases/latest/download/BlackHole.dmg">Download for Mac</a>
+    <p class="fine">Builds aren't notarized by Apple yet, so on first launch open <strong>System Settings → Privacy &amp; Security → Open Anyway</strong>.</p>
   </section>
 </main>
 
@@ -113,5 +189,6 @@
   <p class="fine">Made for people who keep forgetting what they were doing.</p>
 </footer>
 
+<script src="demo.js" defer></script>
 </body>
 </html>

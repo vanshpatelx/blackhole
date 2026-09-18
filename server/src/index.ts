@@ -17,6 +17,12 @@ interface Env {
   CF_ZONE_ID?: string;
   HOSTNAME_SUFFIX: string;
   HOSTNAME_PREFIX: string;
+  /** Leading zero bits a client must find before it may enroll. */
+  POW_BITS: string;
+  /** Ceiling on new installs per day, so abuse can't run away with the account. */
+  DAILY_LIMIT: string;
+  /** Secret that gates /v1/diagnose. */
+  DIAGNOSE_KEY?: string;
   LOCAL_PORT: string;
 }
 
@@ -76,6 +82,56 @@ function randomSecret(): string {
   return btoa(String.fromCharCode(...bytes));
 }
 
+/* ---- proof of work ----
+ * Enrollment creates a DNS record on the project's own domain, so it can't be open to anyone who
+ * can POST. Rather than accounts or an API key shipped in the app (which anyone could read out of
+ * the binary), a client must first solve a small hashcash puzzle: find a counter where
+ * sha256("<nonce>:<installId>:<counter>") starts with POW_BITS zero bits. That costs the app a
+ * fraction of a second once, and makes bulk registration expensive.
+ */
+
+async function challenge(env: Env): Promise<Response> {
+  const bytes = crypto.getRandomValues(new Uint8Array(16));
+  const nonce = [...bytes].map((b) => b.toString(16).padStart(2, "0")).join("");
+  await env.INSTALLS.put(`nonce:${nonce}`, "1", { expirationTtl: 600 });
+  return json({ nonce, bits: Number(env.POW_BITS), expiresInSeconds: 600 });
+}
+
+function leadingZeroBits(digest: Uint8Array): number {
+  let bits = 0;
+  for (const byte of digest) {
+    if (byte === 0) {
+      bits += 8;
+      continue;
+    }
+    bits += Math.clz32(byte) - 24;
+    break;
+  }
+  return bits;
+}
+
+async function solvesPuzzle(env: Env, nonce: string, installId: string, counter: number): Promise<boolean> {
+  if (!/^[a-f0-9]{32}$/.test(nonce) || !Number.isInteger(counter) || counter < 0) return false;
+  // A nonce is single use: claim it before doing anything else.
+  const issued = await env.INSTALLS.get(`nonce:${nonce}`);
+  if (!issued) return false;
+  await env.INSTALLS.delete(`nonce:${nonce}`);
+
+  const digest = new Uint8Array(
+    await crypto.subtle.digest("SHA-256", new TextEncoder().encode(`${nonce}:${installId}:${counter}`)),
+  );
+  return leadingZeroBits(digest) >= Number(env.POW_BITS);
+}
+
+/** Hard ceiling on how many installs can be created in a day. */
+async function underDailyLimit(env: Env): Promise<boolean> {
+  const key = `day:${new Date().toISOString().slice(0, 10)}`;
+  const used = Number((await env.INSTALLS.get(key)) ?? "0");
+  if (used >= Number(env.DAILY_LIMIT)) return false;
+  await env.INSTALLS.put(key, String(used + 1), { expirationTtl: 172_800 });
+  return true;
+}
+
 /** Rough per-IP limit so one machine can't create tunnels in a loop. */
 async function rateLimited(env: Env, request: Request): Promise<boolean> {
   const ip = request.headers.get("cf-connecting-ip") ?? "unknown";
@@ -88,14 +144,26 @@ async function rateLimited(env: Env, request: Request): Promise<boolean> {
 
 async function enroll(request: Request, env: Env): Promise<Response> {
   const { accountId, zoneId } = await ids(env);
-  const { installId } = (await request.json()) as { installId?: string };
+  const { installId, nonce, counter } = (await request.json()) as {
+    installId?: string;
+    nonce?: string;
+    counter?: number;
+  };
   if (!installId || !/^[a-fA-F0-9-]{20,64}$/.test(installId)) {
     return json({ error: "installId must be a UUID" }, 400);
   }
   if (await rateLimited(env, request)) return json({ error: "Too many enrollments, try later" }, 429);
 
-  // Re-enrolling the same install returns a fresh token for the tunnel it already owns.
+  // Known installs keep their address without solving a new puzzle.
   const existing = (await env.INSTALLS.get(`install:${installId}`, "json")) as Install | null;
+  if (!existing) {
+    if (!nonce || typeof counter !== "number" || !(await solvesPuzzle(env, nonce, installId, counter))) {
+      return json({ error: "Enrollment requires a solved challenge from /v1/challenge" }, 403);
+    }
+    if (!(await underDailyLimit(env))) {
+      return json({ error: "Enrollment is paused for today" }, 503);
+    }
+  }
   const slug = existing?.slug ?? newSlug();
   const hostname = existing?.hostname ?? `${env.HOSTNAME_PREFIX}${slug}.${env.HOSTNAME_SUFFIX}`;
 
@@ -147,6 +215,7 @@ async function revoke(request: Request, env: Env): Promise<Response> {
   const { installId } = (await request.json()) as { installId?: string };
   if (!installId) return json({ error: "installId required" }, 400);
 
+  if (!/^[a-fA-F0-9-]{20,64}$/.test(installId)) return json({ error: "installId must be a UUID" }, 400);
   const existing = (await env.INSTALLS.get(`install:${installId}`, "json")) as Install | null;
   if (!existing) return json({ ok: true });
 
@@ -198,7 +267,14 @@ export default {
       if (request.method === "POST" && url.pathname === "/v1/enroll") return await enroll(request, env);
       if (request.method === "POST" && url.pathname === "/v1/revoke") return await revoke(request, env);
       if (url.pathname === "/health") return json({ ok: true });
-      if (url.pathname === "/v1/diagnose") return await diagnose(env);
+      if (url.pathname === "/v1/challenge") return await challenge(env);
+      if (url.pathname === "/v1/diagnose") {
+        // Setup aid, not public: it reports which Cloudflare permissions the token has.
+        if (!env.DIAGNOSE_KEY || url.searchParams.get("key") !== env.DIAGNOSE_KEY) {
+          return json({ error: "Not found" }, 404);
+        }
+        return await diagnose(env);
+      }
       return json({ error: "Not found" }, 404);
     } catch (error) {
       return json({ error: String(error) }, 502);

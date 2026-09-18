@@ -300,6 +300,18 @@ final class MCPServer {
         }
     }
 
+    /// Compares in constant time, so a wrong token can't be narrowed down by how fast we answer.
+    private static func matches(_ candidate: String?, _ expected: String) -> Bool {
+        guard let candidate else { return false }
+        let a = Array(candidate.utf8)
+        let b = Array(expected.utf8)
+        var difference = UInt8(a.count == b.count ? 0 : 1)
+        for i in 0 ..< max(a.count, b.count) {
+            difference |= (i < a.count ? a[i] : 0) ^ (i < b.count ? b[i] : 0)
+        }
+        return difference == 0
+    }
+
     private func respond(to request: HTTPRequest) -> HTTPResponse {
         // Requests relayed by the Cloudflare tunnel carry this header; browsers on this Mac can't forge it
         // without a CORS preflight we never answer.
@@ -314,10 +326,10 @@ final class MCPServer {
         let authorized: Bool
         switch path {
         case "/mcp":
-            authorized = request.headers["authorization"] == "Bearer \(config.token)"
-        case "/mcp/\(config.token)":
+            authorized = Self.matches(request.headers["authorization"], "Bearer \(config.token)")
+        case let candidate where candidate.hasPrefix("/mcp/"):
             // Token in the path, for connectors that can't send headers (claude.ai, ChatGPT).
-            authorized = true
+            authorized = Self.matches(String(candidate.dropFirst("/mcp/".count)), config.token)
         default:
             return HTTPResponse(status: 404, body: Data("Not found".utf8))
         }
@@ -343,6 +355,8 @@ final class MCPServer {
 // MARK: HTTP plumbing
 
 struct HTTPRequest {
+    static let maxBodyBytes = 4 << 20
+
     let method: String
     let path: String
     let headers: [String: String]
@@ -368,7 +382,9 @@ struct HTTPRequest {
             guard let colon = line.firstIndex(of: ":") else { continue }
             headers[line[..<colon].lowercased()] = line[line.index(after: colon)...].trimmingCharacters(in: .whitespaces)
         }
-        let length = Int(headers["content-length"] ?? "0") ?? 0
+        // A bad or hostile Content-Length must not drive the slicing below.
+        let claimed = Int(headers["content-length"] ?? "0") ?? 0
+        let length = min(max(claimed, 0), Self.maxBodyBytes)
         let bodyStart = headerEnd.upperBound
         guard data.count - bodyStart >= length else { return nil }
 

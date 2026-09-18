@@ -1,3 +1,4 @@
+import CryptoKit
 import Foundation
 
 /// Permanent public address for this install, e.g. `https://mcp-a7f3.getblackhole.app`.
@@ -45,11 +46,13 @@ enum HostedTunnel {
     enum EnrollError: LocalizedError {
         case http(Int, String)
         case malformed
+        case puzzleTooHard
 
         var errorDescription: String? {
             switch self {
             case let .http(status, body): "Enrollment failed (\(status)): \(body)"
             case .malformed: "The enrollment service sent something unexpected."
+            case .puzzleTooHard: "Couldn't complete the enrollment check. Try again."
             }
         }
     }
@@ -60,10 +63,18 @@ enum HostedTunnel {
             return stored
         }
 
+        // Registering an address costs a small proof of work, so the service can't be farmed.
+        let puzzle = try await fetchChallenge()
+        let counter = try solve(nonce: puzzle.nonce, bits: puzzle.bits)
+
         var request = URLRequest(url: enrollmentAPI.appending(path: "v1/enroll"))
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.httpBody = try JSONSerialization.data(withJSONObject: ["installId": installID])
+        request.httpBody = try JSONSerialization.data(withJSONObject: [
+            "installId": installID,
+            "nonce": puzzle.nonce,
+            "counter": counter
+        ])
         request.timeoutInterval = 30
 
         let (data, response) = try await URLSession.shared.data(for: request)
@@ -81,6 +92,49 @@ enum HostedTunnel {
         let enrollment = Enrollment(installID: installID, hostname: hostname, tunnelToken: token)
         stored = enrollment
         return enrollment
+    }
+
+    private struct Puzzle {
+        let nonce: String
+        let bits: Int
+    }
+
+    private static func fetchChallenge() async throws -> Puzzle {
+        var request = URLRequest(url: enrollmentAPI.appending(path: "v1/challenge"))
+        request.timeoutInterval = 20
+        let (data, response) = try await URLSession.shared.data(for: request)
+        let status = (response as? HTTPURLResponse)?.statusCode ?? 0
+        guard status == 200,
+              let payload = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let nonce = payload["nonce"] as? String,
+              let bits = payload["bits"] as? Int
+        else {
+            throw EnrollError.http(status, "Couldn't start enrollment")
+        }
+        return Puzzle(nonce: nonce, bits: bits)
+    }
+
+    /// Finds a counter whose SHA-256 starts with `bits` zero bits. Around 2^bits hashes; 20 bits is
+    /// a fraction of a second here and expensive for anyone registering addresses in bulk.
+    private static func solve(nonce: String, bits: Int) throws -> Int {
+        let prefix = "\(nonce):\(installID):"
+        let ceiling = 1 << min(bits + 6, 30)
+        for counter in 0 ..< ceiling {
+            let digest = SHA256.hash(data: Data((prefix + String(counter)).utf8))
+            if leadingZeroBits(digest) >= bits {
+                return counter
+            }
+        }
+        throw EnrollError.puzzleTooHard
+    }
+
+    private static func leadingZeroBits(_ digest: SHA256Digest) -> Int {
+        var bits = 0
+        for byte in digest {
+            guard byte == 0 else { return bits + byte.leadingZeroBitCount }
+            bits += 8
+        }
+        return bits
     }
 
     /// Gives the address back so it can be reused by someone else, and forgets it locally.

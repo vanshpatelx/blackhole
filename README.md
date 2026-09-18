@@ -95,6 +95,7 @@ The same URL works everywhere, so there's nothing else to configure.
 ### Good to know
 
 - The URL carries your access token, so treat it like a password. **Reset Access Token** in the Copy menu revokes it immediately.
+- Because the token sits in the URL path, it is visible to whoever operates the edge your requests cross — for the built-in address, the `getblackhole.app` Cloudflare zone — and to the assistant you paste it into. Your tasks and notes never pass through a Black Hole server, but the credential does cross that edge. With [Tailscale](https://tailscale.com) installed the tunnel stays inside your own tailnet instead, which avoids this entirely.
 - It only answers while Black Hole is open, and your data stays on your Mac; the tunnel just forwards requests.
 - The address is permanent: Black Hole registers one for your Mac the first time you turn AI access on, and reuses it afterwards. (With [Tailscale](https://tailscale.com) installed it uses Tailscale Funnel instead, which is also permanent.)
 - Current URLs are also written to `~/Library/Application Support/Black Hole/mcp.json`, handy for scripts.

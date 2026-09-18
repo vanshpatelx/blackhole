@@ -273,3 +273,22 @@ final class HTTPKeepAliveTests: XCTestCase {
         XCTAssertTrue(String(decoding: response.serialized(), as: UTF8.self).contains("Connection: close"))
     }
 }
+
+final class LoopbackGuardTests: XCTestCase {
+    func testOnlyLoopbackAuthoritiesAreAccepted() {
+        XCTAssertTrue(MCPServer.isLoopbackAuthority("127.0.0.1:52321", port: 52321))
+        XCTAssertTrue(MCPServer.isLoopbackAuthority("LocalHost:52321", port: 52321))
+        // A name an attacker can point at 127.0.0.1 must not pass, which is what stops DNS rebinding.
+        XCTAssertFalse(MCPServer.isLoopbackAuthority("localhost.attacker.com:52321", port: 52321))
+        XCTAssertFalse(MCPServer.isLoopbackAuthority("127.0.0.1.attacker.com:52321", port: 52321))
+        XCTAssertFalse(MCPServer.isLoopbackAuthority("127.0.0.1:1234", port: 52321))
+        XCTAssertFalse(MCPServer.isLoopbackAuthority(nil, port: 52321))
+    }
+
+    func testOriginsMustMatchExactly() {
+        let allowed = MCPServer.loopbackOrigins(port: 52321)
+        XCTAssertTrue(allowed.contains("http://127.0.0.1:52321"))
+        XCTAssertFalse(allowed.contains("http://localhost.attacker.com"))
+        XCTAssertFalse(allowed.contains("http://127.0.0.1:52321.attacker.com"))
+    }
+}

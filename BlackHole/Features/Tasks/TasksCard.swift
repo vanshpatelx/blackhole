@@ -25,7 +25,10 @@ private struct TaskList: View {
     @Query private var tasks: [TaskItem]
     @Environment(TaskActions.self) private var actions
     @State private var draft = ""
+    @State private var search = ""
+    @State private var searching = false
     @FocusState private var inputFocused: Bool
+    @FocusState private var searchFocused: Bool
 
     init(dayKey: String) {
         self.dayKey = dayKey
@@ -36,10 +39,24 @@ private struct TaskList: View {
         Card(tint: Palette.tasks) {
             VStack(alignment: .leading, spacing: 10) {
                 CardHeader(icon: "checklist", title: "Today's tasks") {
-                    Text("\(tasks.filter(\.isDone).count) / \(tasks.count)")
-                        .font(.system(size: 12, weight: .medium).monospacedDigit())
-                        .foregroundStyle(Palette.inkSecondary)
-                        .contentTransition(.numericText())
+                    if searching {
+                        TextField("", text: $search, prompt: Text("Search").foregroundStyle(Palette.inkTertiary))
+                            .textFieldStyle(.plain)
+                            .font(.system(size: 12))
+                            .focused($searchFocused)
+                            .frame(maxWidth: 110)
+                            .onExitCommand(perform: endSearch)
+                        IconButton(systemName: "xmark", size: 18, help: "Clear search", action: endSearch)
+                    } else {
+                        Text("\(tasks.filter(\.isDone).count) / \(tasks.count)")
+                            .font(.system(size: 12, weight: .medium).monospacedDigit())
+                            .foregroundStyle(Palette.inkSecondary)
+                            .contentTransition(.numericText())
+                        IconButton(systemName: "magnifyingglass", size: 18, help: "Search today's tasks") {
+                            searching = true
+                            searchFocused = true
+                        }
+                    }
                 }
 
                 HStack(spacing: 8) {
@@ -62,15 +79,16 @@ private struct TaskList: View {
 
                 ScrollView(.vertical, showsIndicators: false) {
                     LazyVStack(spacing: 3) {
-                        ForEach(tasks) { task in
+                        ForEach(visibleTasks) { task in
                             TaskRow(task: task)
                             DottedDivider().padding(.horizontal, 12)
                         }
                     }
                 }
                 .overlay {
-                    if tasks.isEmpty {
-                        Text("Nothing planned yet.\nAdd the one thing that matters most.")
+                    if visibleTasks.isEmpty {
+                        Text(tasks.isEmpty ? "Nothing planned yet.\nAdd the one thing that matters most."
+                                           : "No task matches \u{201C}\(search)\u{201D}.")
                             .font(.system(size: 12))
                             .multilineTextAlignment(.center)
                             .foregroundStyle(Palette.inkTertiary)
@@ -78,12 +96,29 @@ private struct TaskList: View {
                 }
 
                 CardFooter {
-                    Text(tasks.count > 1 ? "Drag to reorder" : "Right-click for more")
+                    Text(isSearching ? "\(visibleTasks.count) of \(tasks.count) match"
+                                     : (tasks.count > 1 ? "Drag to reorder" : "Right-click for more"))
                 } trailing: {
                     Text(Date.now, format: .dateTime.weekday(.abbreviated).day().month(.abbreviated))
                 }
             }
         }
+    }
+
+    private var isSearching: Bool {
+        searching && !search.trimmingCharacters(in: .whitespaces).isEmpty
+    }
+
+    private var visibleTasks: [TaskItem] {
+        guard isSearching else { return tasks }
+        let needle = search.trimmingCharacters(in: .whitespaces)
+        return tasks.filter { $0.title.localizedCaseInsensitiveContains(needle) }
+    }
+
+    private func endSearch() {
+        search = ""
+        searching = false
+        searchFocused = false
     }
 
     private func submit() {

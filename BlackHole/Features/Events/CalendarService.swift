@@ -139,7 +139,8 @@ final class CalendarService {
         let now = Date()
         let edges = events
             .filter { !$0.isAllDay && $0.end > now }
-            .flatMap { [$0.start - Self.meetingLeadTime, $0.start + Self.meetingGracePeriod] }
+            // A meeting shorter than the grace period disappears at its end, which comes first.
+            .flatMap { [$0.start - Self.meetingLeadTime, $0.start + Self.meetingGracePeriod, $0.end] }
             .filter { $0 > now }
         guard let next = edges.min() else { return }
         meetingEdgeTimer = Timer.scheduledTimer(

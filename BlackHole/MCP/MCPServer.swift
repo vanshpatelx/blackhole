@@ -79,10 +79,9 @@ final class MCPServer {
         guard allowStart else { return }
         config.save()
         if config.enabled {
+            // `start()` binds the default port first and only then settles `config.port`, so the
+            // tailnet listener follows from the `.ready` handler rather than binding a stale one.
             start()
-            if isTailnetEnabled {
-                startTailnetListener()
-            }
             if MCPTunnel.isEnabled {
                 tunnel.start(localPort: config.port)
             }
@@ -116,10 +115,8 @@ final class MCPServer {
         config.save()
         setRemoteAccess(enabled)
         if enabled {
+            // The tailnet listener follows from `.ready`, once the bound port is known.
             start()
-            if isTailnetEnabled {
-                startTailnetListener()
-            }
         } else {
             stop()
             stopTailnetListener()
@@ -232,10 +229,14 @@ final class MCPServer {
                         if self.config.port != port {
                             self.config.port = port
                             self.config.save()
-                            // The tunnel must point at the port we actually got.
+                            // Everything that advertises or forwards to a port has to follow it.
                             if MCPTunnel.isEnabled {
                                 self.tunnel.start(localPort: port)
                             }
+                        }
+                        // Bind the tailnet listener to the port we actually got, not a saved one.
+                        if self.isTailnetEnabled {
+                            self.startTailnetListener()
                         }
                         self.state = .running(port: port)
                     case let .failed(error), let .waiting(error):

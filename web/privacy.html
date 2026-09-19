@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Privacy — Black Hole</title>
+<meta name="description" content="What Black Hole stores, what it never sends, and what the optional AI access exposes.">
+<link rel="icon" href="icon.png">
+<link rel="canonical" href="https://getblackhole.app/privacy">
+<link rel="alternate" type="text/markdown" href="https://getblackhole.app/privacy.md">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Black Hole">
+<meta property="og:title" content="Privacy — Black Hole">
+<meta property="og:description" content="What Black Hole stores, what it never sends, and what the optional AI access exposes.">
+<meta property="og:image" content="https://getblackhole.app/workspace.png">
+<meta property="og:url" content="https://getblackhole.app/privacy">
+<link rel="stylesheet" href="style.css">
+</head>
+<body class="page">
+<div class="menubar">
+  <div class="menubar-left">
+    <a class="brand" href="/"><img src="icon.png" width="22" height="22" alt=""><span>Black Hole</span></a>
+  </div>
+  <div class="notch"></div>
+  <div class="menubar-right">
+    <a href="/">Home</a>
+    <a href="https://github.com/vanshpatelx/blackhole">GitHub</a>
+    <a class="pill" href="https://github.com/vanshpatelx/blackhole/releases/latest/download/BlackHole.dmg">Download</a>
+  </div>
+</div>
+<main class="prose">
+<h1>Privacy</h1>
+<p>Black Hole has no accounts, no analytics and no telemetry. Nobody, including us, can see what you put in it.</p>
+<h2>What is stored, and where</h2>
+<p>Your tasks, focus sessions and notes live in a database on your own Mac, at <code>~/Library/Application Support/Black Hole/</code>. Nothing is uploaded anywhere. There is no sync service, no cloud backup and no sign-in. If you delete the app and that folder, the data is gone — so if you want a copy, Settings has an export that writes everything out as JSON you can read.</p>
+<h2>Calendar</h2>
+<p>Calendar access is optional, and read-only. Black Hole asks macOS for today's events through EventKit, which means your iCloud, Google and Outlook accounts stay where they already are, and the app never handles your credentials. It never creates, edits or deletes an event. You choose which calendars appear in Settings, and you can revoke access at any time in System Settings → Privacy &amp; Security → Calendars.</p>
+<h2>Spotify</h2>
+<p>If you use the playback card, Black Hole talks to the copy of Spotify running on your Mac through Apple events — the same mechanism the menu bar uses. It reads the current track and sends play, pause, next and previous. No Spotify account or API key is involved, and nothing about your listening leaves your machine.</p>
+<h2>AI access</h2>
+<p>AI access is off until you turn it on. When you do, your Mac gets a permanent HTTPS address and runs a tunnel so an assistant can reach the MCP server on your machine. Requests travel from the assistant, through Cloudflare, straight down that tunnel to your Mac. Your tasks and notes are not stored by, or visible to, any server of ours.</p>
+<p>One thing to know: the access token is part of that URL, so it is visible to whoever operates the edge the request crosses — for the built-in address, the getblackhole.app Cloudflare zone — and to whichever assistant you paste it into. Treat the URL like a password, and reset it from the Copy menu if it leaks. If you would rather the traffic never left your own network, installing Tailscale switches the tunnel to your private tailnet instead.</p>
+<h2>This website</h2>
+<p>getblackhole.app is static files on Cloudflare. It sets no cookies and runs no analytics. The page asks GitHub for the latest release number so the download button points at the current version; that request goes to GitHub, not to us.</p>
+</main>
+<footer>
+  <p>
+    <a href="/">Home</a> ·
+    <a href="/about">About</a> ·
+    <a href="/contact">Contact</a> ·
+    <a href="/privacy">Privacy</a> ·
+    <a href="https://github.com/vanshpatelx/blackhole">GitHub</a>
+  </p>
+</footer>
+</body>
+</html>

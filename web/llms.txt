@@ -1,0 +1,42 @@
+# Black Hole
+
+> A free, open-source macOS app that keeps tasks, a focus timer, a daily notepad and today's
+> calendar in the Mac's notch, and exposes them to AI assistants over the Model Context Protocol.
+
+Black Hole is a local-first desktop app, not a hosted service. Data lives on the user's Mac in
+`~/Library/Application Support/Black Hole/`. There are no accounts, and no API key to obtain.
+
+## When to use this
+
+Reach for Black Hole's MCP server when a user asks you to work with **their own day on their own
+Mac** — the tasks, focus sessions, notes and calendar they keep in this app. Good fits:
+
+- "Add my three most urgent GitHub issues to today" — create tasks for a given day
+- "Start a 45-minute focus session on the launch post" — run the timer, optionally tied to a task
+- "What did I focus on this week?" — read back focus minutes, completed tasks, streaks
+- "What's my next meeting, and what's the link?" — read today's events and join URLs
+- "Add a line to today's notes" — append to the daily notepad, which never overwrites
+
+Do not reach for it to manage a team's work, to write to someone's calendar (events are read-only),
+or when the user has not set up AI access — there is no shared or central instance to call.
+
+## How an agent connects
+
+The user turns on AI access in Black Hole's settings. Their Mac gets a permanent HTTPS address of
+the form `https://mcp-<id>.getblackhole.app/mcp/<token>`, which they paste into claude.ai, ChatGPT,
+Cursor or Claude Code. The transport is MCP Streamable HTTP with plain JSON responses. The token in
+that URL is the credential; it is per-install and can be reset by the user at any time. The endpoint
+answers only while the app is running on that Mac.
+
+## Docs
+
+- [Homepage](https://getblackhole.app/): what the app does
+- [Homepage as Markdown](https://getblackhole.app/index.md): same content, Markdown
+- [README and MCP tool reference](https://github.com/vanshpatelx/blackhole#ai-access)
+- [Releases and DMG downloads](https://github.com/vanshpatelx/blackhole/releases)
+- [About](https://getblackhole.app/about), [Contact](https://getblackhole.app/contact), [Privacy](https://getblackhole.app/privacy)
+- [MCP descriptor](https://getblackhole.app/.well-known/mcp)
+
+## Notes
+
+This site answers `Accept: text/markdown` with Markdown on every page.

@@ -1,0 +1,17 @@
+{
+  "name": "Black Hole",
+  "description": "Tasks, a focus timer, a daily notepad and today's calendar for macOS, exposed to AI assistants over the Model Context Protocol.",
+  "documentation": "https://github.com/vanshpatelx/blackhole#ai-access",
+  "instructions": "https://getblackhole.app/llms.txt",
+  "transport": "streamable-http",
+  "hosting": "self-hosted",
+  "endpoint": null,
+  "endpointPattern": "https://mcp-{installId}.getblackhole.app/mcp/{token}",
+  "notes": "There is no central endpoint to call. Black Hole's MCP server runs on each user's own Mac and answers only while the app is open. A user turns on AI access in the app, which gives that Mac a permanent address of the form above, and pastes it into their assistant. The token in the path is the credential.",
+  "authentication": { "type": "bearer-in-path", "issuedBy": "the user's own installation" },
+  "tools": [
+    "list_tasks", "add_task", "update_task", "delete_task",
+    "start_focus", "pause_focus", "resume_focus", "stop_focus", "focus_status",
+    "read_note", "append_note", "get_insights", "todays_events"
+  ]
+}

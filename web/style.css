@@ -744,3 +744,20 @@ button:focus-visible,
   .demo-insights { grid-template-columns: 1fr; }
   .demo-chart { min-height: 110px; }
 }
+
+/* Plain text pages: About, Contact, Privacy, 404. Same ground as the landing page, no demo. */
+body.page .menubar .notch { pointer-events: none; }
+.prose { max-width: 720px; padding-top: 48px; }
+.prose h1 { font-size: 38px; line-height: 1.1; letter-spacing: -0.02em; margin: 0 0 18px; }
+.prose h2 { font-size: 19px; margin: 34px 0 10px; letter-spacing: -0.01em; }
+.prose p { font-size: 16px; line-height: 1.65; color: var(--muted); margin: 0 0 14px; }
+.prose ul { padding-left: 20px; margin: 0 0 14px; }
+.prose li { font-size: 16px; line-height: 1.7; color: var(--muted); }
+.prose a { color: inherit; text-decoration: underline; text-underline-offset: 3px; }
+.prose code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 14px;
+  padding: 2px 5px;
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.07);
+}

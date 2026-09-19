@@ -5,6 +5,7 @@ struct NotchRootView: View {
     @Environment(NotchViewModel.self) private var model
     @Environment(FocusEngine.self) private var focus
     @Environment(CalendarService.self) private var calendar
+    @Environment(SpotifyController.self) private var spotify
 
     /// Width of each side of the timer "island" around the notch.
     static let islandWing: CGFloat = 78
@@ -101,6 +102,7 @@ struct NotchRootView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .preferredColorScheme(.dark)
+        .onChange(of: expanded) { _, isOpen in spotify.setActive(isOpen) }
     }
 
     /// Opens the invite's video link, or shows the day if the meeting has no link to join.
@@ -307,7 +309,7 @@ struct ExpandedPanel: View {
 
             Group {
                 switch model.tab {
-                case .workspace: WorkspaceView()
+                case .workspace: WorkspaceView(musicPollsWhenShown: placement != .notch)
                 case .insights: InsightsView()
                 case .settings: SettingsView()
                 }

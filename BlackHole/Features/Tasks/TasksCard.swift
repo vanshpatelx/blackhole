@@ -2,13 +2,16 @@ import SwiftData
 import SwiftUI
 
 struct WorkspaceView: View {
+    /// See `NowPlayingCard.pollsWhenShown`.
+    var musicPollsWhenShown = true
+
     var body: some View {
         HStack(spacing: 8) {
             TasksCard()
             TimerCard().frame(width: 172)
             NotepadCard().frame(width: 182)
             EventsCard().frame(width: 152)
-            NowPlayingCard().frame(width: 168)
+            NowPlayingCard(pollsWhenShown: musicPollsWhenShown).frame(width: 168)
         }
     }
 }

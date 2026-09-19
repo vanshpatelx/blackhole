@@ -38,6 +38,9 @@ final class AppServices {
         }
         if Self.isDemo {
             DemoData.seed(into: container.mainContext)
+            if UserDefaults.standard.bool(forKey: "demoMeeting") {
+                calendar.seedDemoMeeting()
+            }
         }
         focus = FocusEngine(
             context: container.mainContext,

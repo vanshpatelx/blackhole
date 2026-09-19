@@ -36,6 +36,7 @@ final class NotchPanel: NSPanel {
 final class NotchWindowController {
     private let model: NotchViewModel
     private let focus: FocusEngine
+    private let calendar: CalendarService
     private let panel: NotchPanel
     private var monitors: [Any] = []
     private var expandWork: DispatchWorkItem?
@@ -51,6 +52,7 @@ final class NotchWindowController {
     init(services: AppServices) {
         model = services.notch
         focus = services.focus
+        calendar = services.calendar
         panel = NotchPanel(contentRect: model.geometry.panelFrame)
 
         let root = NotchRootView().blackHoleEnvironment(services)
@@ -85,6 +87,10 @@ final class NotchWindowController {
         }
         if focus.isActive {
             return g.rect(for: NotchRootView.collapsedSize(geometry: g, timerActive: true))
+        }
+        if calendar.imminentMeeting() != nil {
+            // The meeting island is clickable: that click is how you join.
+            return g.rect(for: NotchRootView.collapsedSize(geometry: g, timerActive: false, meetingActive: true))
         }
         return .zero
     }

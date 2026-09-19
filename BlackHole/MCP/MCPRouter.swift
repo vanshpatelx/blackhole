@@ -216,7 +216,8 @@ final class MCPRouter {
                     "all_day": e.isAllDay,
                     "start": Self.iso(e.start),
                     "end": Self.iso(e.end),
-                    "happening_now": e.isHappening(at: now())
+                    "happening_now": e.isHappening(at: now()),
+                    "join_url": e.meetingURL?.absoluteString ?? ""
                 ] as [String: Any]
             }]
 

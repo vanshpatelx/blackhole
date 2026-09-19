@@ -94,7 +94,8 @@ struct EventsCard: View {
                             event.start.formatted(date: .omitted, time: .shortened)
                             + " – " + event.end.formatted(date: .omitted, time: .shortened),
                         highlight: event.isHappening(at: now) && !event.isAllDay ? "Happening now" : nil,
-                        color: event.color
+                        color: event.color,
+                        joinURL: event.meetingURL
                     )
                 }
             }
@@ -139,6 +140,7 @@ private struct EventTile: View {
     let subtitle: String
     let highlight: String?
     var color: Color?
+    var joinURL: URL?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 3) {
@@ -146,9 +148,17 @@ private struct EventTile: View {
                 .font(.system(size: 12.5, weight: .semibold))
                 .lineLimit(2)
                 .fixedSize(horizontal: false, vertical: true)
-            Text(subtitle)
-                .font(.system(size: 11, weight: .medium))
-                .foregroundStyle(Palette.inkSecondary)
+            HStack(spacing: 6) {
+                Text(subtitle)
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(Palette.inkSecondary)
+                if let joinURL {
+                    Button("Join") { NSWorkspace.shared.open(joinURL) }
+                        .buttonStyle(PillButtonStyle())
+                        .controlSize(.mini)
+                        .fixedSize()
+                }
+            }
             if let highlight {
                 Text(highlight)
                     .font(.system(size: 10.5, weight: .semibold))

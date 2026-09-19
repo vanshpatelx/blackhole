@@ -1,4 +1,5 @@
 @testable import BlackHole
+import EventKit
 import SwiftData
 import XCTest
 
@@ -290,5 +291,68 @@ final class LoopbackGuardTests: XCTestCase {
         XCTAssertTrue(allowed.contains("http://127.0.0.1:52321"))
         XCTAssertFalse(allowed.contains("http://localhost.attacker.com"))
         XCTAssertFalse(allowed.contains("http://127.0.0.1:52321.attacker.com"))
+    }
+}
+
+@MainActor
+final class MeetingIslandTests: XCTestCase {
+    private func event(startingIn seconds: TimeInterval, lasting: TimeInterval = 1800, allDay: Bool = false) -> CalendarService.Event {
+        CalendarService.Event(
+            id: UUID().uuidString,
+            title: "Design review",
+            start: .now.addingTimeInterval(seconds),
+            end: .now.addingTimeInterval(seconds + lasting),
+            isAllDay: allDay,
+            calendarTitle: "Work",
+            color: .blue,
+            meetingURL: URL(string: "https://meet.google.com/abc-defg-hij")
+        )
+    }
+
+    func testMeetingLinksAreFoundWhereverTheInviteHidesThem() {
+        let invite = EKEvent(eventStore: EKEventStore())
+        invite.notes = "Dial in, or use https://zoom.us/j/1234567890 to join"
+        XCTAssertEqual(CalendarService.meetingLink(in: invite)?.host(), "zoom.us")
+
+        invite.notes = nil
+        invite.location = "https://teams.microsoft.com/l/meetup-join/xyz"
+        XCTAssertEqual(CalendarService.meetingLink(in: invite)?.host(), "teams.microsoft.com")
+
+        // A room name or an unrelated link is not something you can join.
+        invite.location = "Meeting room 3, second floor"
+        invite.notes = "Agenda: https://notion.so/some-doc"
+        XCTAssertNil(CalendarService.meetingLink(in: invite))
+    }
+
+    func testOnlyMeetingsInsideTheWindowTakeTheNotch() {
+        let service = CalendarService()
+        // Far out, so the notch stays empty while you work.
+        service.setEventsForTesting([event(startingIn: 30 * 60)])
+        XCTAssertNil(service.imminentMeeting())
+
+        // Inside the lead time.
+        service.setEventsForTesting([event(startingIn: 4 * 60)])
+        XCTAssertNotNil(service.imminentMeeting())
+
+        // Started a moment ago: still worth showing, you may not have joined yet.
+        service.setEventsForTesting([event(startingIn: -2 * 60)])
+        XCTAssertNotNil(service.imminentMeeting())
+
+        // Long underway: you joined or you skipped it, either way stop holding the notch.
+        service.setEventsForTesting([event(startingIn: -30 * 60, lasting: 7200)])
+        XCTAssertNil(service.imminentMeeting())
+
+        // All-day events are not meetings to join.
+        service.setEventsForTesting([event(startingIn: 60, allDay: true)])
+        XCTAssertNil(service.imminentMeeting())
+    }
+
+    func testDismissingAMeetingClearsTheNotch() {
+        let service = CalendarService()
+        let meeting = event(startingIn: 60)
+        service.setEventsForTesting([meeting])
+        XCTAssertNotNil(service.imminentMeeting())
+        service.dismissMeeting(id: meeting.id)
+        XCTAssertNil(service.imminentMeeting())
     }
 }

@@ -79,10 +79,9 @@ final class MCPServer {
         guard allowStart else { return }
         config.save()
         if config.enabled {
+            // `start()` binds the default port first and only then settles `config.port`, so the
+            // tailnet listener follows from the `.ready` handler rather than binding a stale one.
             start()
-            if isTailnetEnabled {
-                startTailnetListener()
-            }
             if MCPTunnel.isEnabled {
                 tunnel.start(localPort: config.port)
             }
@@ -116,10 +115,8 @@ final class MCPServer {
         config.save()
         setRemoteAccess(enabled)
         if enabled {
+            // The tailnet listener follows from `.ready`, once the bound port is known.
             start()
-            if isTailnetEnabled {
-                startTailnetListener()
-            }
         } else {
             stop()
             stopTailnetListener()
@@ -213,7 +210,9 @@ final class MCPServer {
 
     private func start(tryPort: UInt16? = nil, attemptsLeft: Int = 5) {
         stop()
-        let port = tryPort ?? config.port
+        // Always begin at the default port. The saved port is only ever a fallback from a past
+        // conflict, and keeping it would leave hosted access broken long after the conflict is gone.
+        let port = tryPort ?? MCPConfig.defaultPort
         do {
             let params = NWParameters.tcp
             params.requiredLocalEndpoint = .hostPort(host: "127.0.0.1", port: NWEndpoint.Port(rawValue: port)!)
@@ -230,10 +229,14 @@ final class MCPServer {
                         if self.config.port != port {
                             self.config.port = port
                             self.config.save()
-                            // The tunnel must point at the port we actually got.
+                            // Everything that advertises or forwards to a port has to follow it.
                             if MCPTunnel.isEnabled {
                                 self.tunnel.start(localPort: port)
                             }
+                        }
+                        // Bind the tailnet listener to the port we actually got, not a saved one.
+                        if self.isTailnetEnabled {
+                            self.startTailnetListener()
                         }
                         self.state = .running(port: port)
                     case let .failed(error), let .waiting(error):
@@ -323,15 +326,33 @@ final class MCPServer {
         return ["localhost:\(port)", "127.0.0.1:\(port)", "[::1]:\(port)"].contains(host)
     }
 
+    /// Hosts this server answers to: loopback for apps on this Mac, this Mac's tailnet address for
+    /// the user's other machines, and the tunnel's own hostname while one is up — Tailscale Funnel
+    /// forwards the public `*.ts.net` name straight to loopback. Rebinding needs DNS the attacker
+    /// controls, and none of these are names anyone else can hand out, so listing them is safe.
+    private func isAllowedHost(_ host: String?) -> Bool {
+        guard let host = host?.lowercased() else { return false }
+        if Self.isLoopbackAuthority(host, port: config.port) {
+            return true
+        }
+        if let tailnetAddress, host == "\(tailnetAddress):\(config.port)" || host == tailnetAddress {
+            return true
+        }
+        if case let .running(url) = tunnel.state, let tunnelHost = url.host()?.lowercased() {
+            return host == tunnelHost || host == "\(tunnelHost):443"
+        }
+        return false
+    }
+
     private func respond(to request: HTTPRequest) -> HTTPResponse {
         // Requests relayed by the Cloudflare tunnel carry this header; browsers on this Mac can't forge it
         // without a CORS preflight we never answer.
         let viaTunnel = request.headers["cf-connecting-ip"] != nil
         if !viaTunnel {
             // A name like `localhost.example.com` can be pointed at 127.0.0.1, which would make a
-            // hostile page same-origin with us. Insisting on a loopback Host is what stops that;
+            // hostile page same-origin with us. Insisting on a host we recognise is what stops that;
             // the Origin check then keeps other local pages out.
-            guard Self.isLoopbackAuthority(request.headers["host"], port: config.port) else {
+            guard isAllowedHost(request.headers["host"]) else {
                 return HTTPResponse(status: 403, body: Data("Forbidden host".utf8))
             }
             if let origin = request.headers["origin"],

@@ -87,7 +87,7 @@ struct NotchRootView: View {
                 Color.clear
                     .contentShape(Rectangle())
                     .onTapGesture { model.expand(pinned: true) }
-            } else if let meeting {
+            } else if meetingIsland, let meeting {
                 Color.clear
                     .contentShape(Rectangle())
                     .onTapGesture { join(meeting) }

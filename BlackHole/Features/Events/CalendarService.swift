@@ -126,6 +126,34 @@ final class CalendarService {
                     meetingURL: Self.meetingLink(in: e)
                 )
             }
+        scheduleMeetingEdge()
+    }
+
+    @ObservationIgnored private var meetingEdgeTimer: Timer?
+
+    /// Wakes observers exactly when a meeting enters or leaves the notch's window. Without this the
+    /// island waits for the next 60-second calendar refresh, so it can appear or vanish a minute
+    /// late — and while it is wrong, the clickable region and what's drawn disagree.
+    private func scheduleMeetingEdge() {
+        meetingEdgeTimer?.invalidate()
+        let now = Date()
+        let edges = events
+            .filter { !$0.isAllDay && $0.end > now }
+            // A meeting shorter than the grace period disappears at its end, which comes first.
+            .flatMap { [$0.start - Self.meetingLeadTime, $0.start + Self.meetingGracePeriod, $0.end] }
+            .filter { $0 > now }
+        guard let next = edges.min() else { return }
+        meetingEdgeTimer = Timer.scheduledTimer(
+            withTimeInterval: max(0.5, next.timeIntervalSince(now) + 0.1),
+            repeats: false
+        ) { [weak self] _ in
+            MainActor.assumeIsolated {
+                guard let self else { return }
+                // Nothing about the events changed; observers just need to look at the clock again.
+                self.events = self.events
+                self.scheduleMeetingEdge()
+            }
+        }
     }
 
     /// How soon a meeting has to be before the notch starts counting down to it.
@@ -140,6 +168,7 @@ final class CalendarService {
     /// Stops showing this meeting in the notch, until the app restarts.
     func dismissMeeting(id: String) {
         dismissedMeetingIDs.insert(id)
+        scheduleMeetingEdge()
         // `events` is unchanged, so nudge observers to drop the island.
         events = events
     }
@@ -165,9 +194,9 @@ final class CalendarService {
         // `-demoMeetingIn <seconds>` moves the sample meeting and `-demoMeetingStarted YES` puts it
         // just behind us, so both the countdown and the "Now" state can be captured on demand.
         // (A negative `-demoMeetingIn` can't work: macOS reads a leading dash as the next key.)
-        let startsIn = UserDefaults.standard.bool(forKey: "demoMeetingStarted")
-            ? -45
-            : UserDefaults.standard.object(forKey: "demoMeetingIn") as? Int ?? 200
+        // Launch arguments arrive as strings, so `integer(forKey:)` is the one that reads them.
+        let requested = UserDefaults.standard.integer(forKey: "demoMeetingIn")
+        let startsIn = UserDefaults.standard.bool(forKey: "demoMeetingStarted") ? -45 : (requested == 0 ? 200 : requested)
         events = [Event(
             id: "demo-meeting",
             title: "Design review",
@@ -178,6 +207,7 @@ final class CalendarService {
             color: Color(hex: 0x62B6FF),
             meetingURL: URL(string: "https://meet.google.com/abc-defg-hij")
         )]
+        scheduleMeetingEdge()
     }
 
     #if DEBUG

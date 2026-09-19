@@ -1,17 +1,22 @@
+import AppKit
 import SwiftUI
 
 struct NotchRootView: View {
     @Environment(NotchViewModel.self) private var model
     @Environment(FocusEngine.self) private var focus
+    @Environment(CalendarService.self) private var calendar
 
     /// Width of each side of the timer "island" around the notch.
     static let islandWing: CGFloat = 78
+    /// Meetings need more room than a countdown, because the title goes there too.
+    static let meetingWing: CGFloat = 122
 
-    static func collapsedSize(geometry g: NotchGeometry, timerActive: Bool) -> CGSize {
-        if timerActive {
+    static func collapsedSize(geometry g: NotchGeometry, timerActive: Bool, meetingActive: Bool = false) -> CGSize {
+        if timerActive || meetingActive {
             // Dynamic Island style: grow sideways on the notch's own line instead of downward.
             let notchWidth = g.hasNotch ? g.notchSize.width : 0
-            return CGSize(width: notchWidth + islandWing * 2, height: g.hasNotch ? g.notchSize.height : 30)
+            let wing = timerActive ? islandWing : meetingWing
+            return CGSize(width: notchWidth + wing * 2, height: g.hasNotch ? g.notchSize.height : 30)
         }
         return g.hasNotch ? g.notchSize : CGSize(width: g.notchSize.width, height: 0)
     }
@@ -20,12 +25,18 @@ struct NotchRootView: View {
         let g = model.geometry
         let expanded = model.isExpanded
         let island = !expanded && focus.isActive
-        let size = expanded ? g.expandedSize : Self.collapsedSize(geometry: g, timerActive: focus.isActive)
-        let visible = expanded || g.hasNotch || focus.isActive
+        // A running timer owns the notch; a meeting only takes it when nothing else is using it.
+        let meeting = focus.isActive ? nil : calendar.imminentMeeting()
+        let meetingIsland = !expanded && meeting != nil
+        let size = expanded
+            ? g.expandedSize
+            : Self.collapsedSize(geometry: g, timerActive: focus.isActive, meetingActive: meeting != nil)
+        let visible = expanded || g.hasNotch || focus.isActive || meeting != nil
+        let anyIsland = island || meetingIsland
         let shape = NotchShape(
-            topRadius: expanded ? NotchGeometry.flare : (island ? 9 : 7),
+            topRadius: expanded ? NotchGeometry.flare : (anyIsland ? 9 : 7),
             // Concentric with the cards: card radius plus the black border.
-            bottomRadius: expanded ? Radius.card + NotchGeometry.inset : (island ? 13 : 9)
+            bottomRadius: expanded ? Radius.card + NotchGeometry.inset : (anyIsland ? 13 : 9)
         )
 
         ZStack(alignment: .top) {
@@ -52,6 +63,20 @@ struct NotchRootView: View {
                 .animation(island ? .easeOut(duration: 0.3).delay(0.18) : .easeOut(duration: 0.12), value: island)
                 .allowsHitTesting(false)
             }
+
+            if let meeting {
+                MeetingIsland(
+                    meeting: meeting,
+                    notchWidth: g.hasNotch ? g.notchSize.width : 0,
+                    height: Self.collapsedSize(geometry: g, timerActive: false, meetingActive: true).height
+                )
+                .opacity(meetingIsland ? 1 : 0)
+                .animation(
+                    meetingIsland ? .easeOut(duration: 0.3).delay(0.18) : .easeOut(duration: 0.12),
+                    value: meetingIsland
+                )
+                .allowsHitTesting(false)
+            }
         }
         .frame(width: size.width, height: size.height, alignment: .top)
         // The black shape reveals the content as it grows, like the Dynamic Island.
@@ -62,10 +87,30 @@ struct NotchRootView: View {
                 Color.clear
                     .contentShape(Rectangle())
                     .onTapGesture { model.expand(pinned: true) }
+            } else if let meeting {
+                Color.clear
+                    .contentShape(Rectangle())
+                    .onTapGesture { join(meeting) }
+                    .contextMenu {
+                        if meeting.meetingURL != nil {
+                            Button("Join \(meeting.title)") { join(meeting) }
+                        }
+                        Button("Dismiss") { calendar.dismissMeeting(id: meeting.id) }
+                    }
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .preferredColorScheme(.dark)
+    }
+
+    /// Opens the invite's video link, or shows the day if the meeting has no link to join.
+    private func join(_ meeting: CalendarService.Event) {
+        guard let url = meeting.meetingURL else {
+            model.expand(pinned: true)
+            return
+        }
+        NSWorkspace.shared.open(url)
+        calendar.dismissMeeting(id: meeting.id)
     }
 }
 
@@ -108,6 +153,52 @@ private struct IslandTimer: View {
                 .fixedSize()
                 .padding(.trailing, 14)
                 .frame(width: wing, alignment: .trailing)
+            }
+            .frame(height: height)
+        }
+    }
+}
+
+/// The next meeting in the notch's row: what it is on the left, how long you have on the right.
+private struct MeetingIsland: View {
+    let meeting: CalendarService.Event
+    let notchWidth: CGFloat
+    let height: CGFloat
+
+    private static let soon = Color(hex: 0xFF5E7E)
+    private static let live = Color(hex: 0x4ADE80)
+
+    var body: some View {
+        TimelineView(.periodic(from: .now, by: 1)) { context in
+            let untilStart = meeting.start.timeIntervalSince(context.date)
+            let started = untilStart <= 0
+            let wing = NotchRootView.meetingWing
+
+            HStack(spacing: 0) {
+                HStack(spacing: 5) {
+                    Image(systemName: meeting.meetingURL == nil ? "calendar" : "video.fill")
+                        .font(.system(size: 9, weight: .semibold))
+                        .foregroundStyle(meeting.color)
+                    Text(meeting.title)
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundStyle(.white.opacity(0.85))
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+                }
+                .padding(.leading, 14)
+                .frame(width: wing, alignment: .leading)
+
+                Color.clear.frame(width: notchWidth)
+
+                Text(started ? "Now" : DotMatrixText.format(seconds: Int(untilStart.rounded(.up))))
+                    .font(.system(size: 13, weight: .semibold, design: .rounded).monospacedDigit())
+                    .foregroundStyle(started ? Self.live : Self.soon)
+                    .contentTransition(.numericText(countsDown: true))
+                    .animation(.snappy(duration: 0.3), value: started ? 0 : Int(untilStart))
+                    .lineLimit(1)
+                    .fixedSize()
+                    .padding(.trailing, 14)
+                    .frame(width: wing, alignment: .trailing)
             }
             .frame(height: height)
         }

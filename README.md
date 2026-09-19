@@ -31,6 +31,7 @@ It's free, open source, and your data never leaves your Mac.
 - **Focus timer**: countdown or stopwatch with pause, resume and +5 minutes. While it runs, the notch becomes a live island: a progress ring on one side and the countdown on the other. It pauses when your Mac sleeps.
 - **Daily notepad**: saves as you type. Put the cursor on a line and press <kbd>⌘</kbd><kbd>↩</kbd> to turn it into a task.
 - **Events from all your calendars**: iCloud, Google (as many accounts as you like), Outlook/Exchange and subscribed calendars, color-coded and read-only. Pick which calendars show in **Settings → Calendars**.
+- **Your next meeting, in the notch**: five minutes before it starts the notch counts down to it, and clicking joins the call — Zoom, Meet, Teams, Webex and the rest, wherever the invite hid the link. Right-click to dismiss one.
 - **Insights**: focus time, completed vs. planned tasks, active days and your streak over the last week.
 - **Floating button**: a draggable button for any display (great with external monitors). Click it and the whole workspace opens right next to it.
 - **Works with AI assistants (MCP)**: one URL connects Claude, Cursor, ChatGPT or any MCP client so they can list and add tasks, run focus sessions, read your notes and pull insights.

@@ -73,6 +73,38 @@ final class FocusEngineTests: XCTestCase {
         FocusEngine(context: container.mainContext, defaults: defaults, now: { [unowned self] in now })
     }
 
+    func testAFinishedTimerDoesNotComeBackOnRelaunch() {
+        let engine = makeEngine()
+        engine.start(targetSec: 60)
+        now += 61
+        engine.checkFinished()
+        XCTAssertEqual(engine.phase, .finished)
+        XCTAssertTrue(engine.isActive, "It stays in the notch while you're still looking at it")
+
+        // Quitting and reopening: the chime happened hours ago, so the notch should be empty.
+        now += 3600
+        let relaunched = makeEngine()
+        XCTAssertEqual(relaunched.phase, .idle)
+        XCTAssertFalse(relaunched.isActive)
+
+        // The session still counts towards Insights, ended when it ran out rather than at relaunch.
+        let sessions = try? container.mainContext.fetch(FetchDescriptor<FocusSession>())
+        let session = try? XCTUnwrap(sessions?.first)
+        XCTAssertEqual(session?.accumulatedSec, 60)
+        XCTAssertEqual(session?.endedAt, session?.startedAt.addingTimeInterval(60))
+    }
+
+    func testAPausedTimerIsStillThereAfterRelaunch() {
+        let engine = makeEngine()
+        engine.start(targetSec: 25 * 60)
+        now += 300
+        engine.pause()
+
+        let relaunched = makeEngine()
+        XCTAssertEqual(relaunched.phase, .paused, "A paused timer is deliberate; keep it")
+        XCTAssertEqual(relaunched.displaySeconds(at: now), 20 * 60)
+    }
+
     func testCountdownPauseResumeAndAddFive() {
         let engine = makeEngine()
         engine.start(targetSec: 25 * 60)

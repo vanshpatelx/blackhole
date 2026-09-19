@@ -24,6 +24,7 @@ targets:
       path: BlackHole/Support/BlackHole.entitlements
       properties:
         com.apple.security.personal-information.calendars: true
+        com.apple.security.automation.apple-events: true
     info:
       path: BlackHole/Support/Info.plist
       properties:
@@ -35,6 +36,7 @@ targets:
         LSUIElement: true
         LSApplicationCategoryType: public.app-category.productivity
         NSCalendarsFullAccessUsageDescription: Black Hole shows today's upcoming events next to your tasks. It only reads events and never changes them.
+        NSAppleEventsUsageDescription: Black Hole shows what Spotify is playing and lets you skip or pause it from the notch.
         NSHumanReadableCopyright: © 2026 Black Hole · getblackhole.app
     settings:
       base:

@@ -2,6 +2,9 @@ import SwiftUI
 
 /// What Spotify is playing, with the three controls anyone actually reaches for.
 struct NowPlayingCard: View {
+    /// False inside the notch, where the panel is built at launch and kept in the tree: there the
+    /// panel's own expansion drives polling, so opening the workspace is what asks Spotify anything.
+    var pollsWhenShown = true
     @Environment(SpotifyController.self) private var spotify
 
     var body: some View {
@@ -45,8 +48,16 @@ struct NowPlayingCard: View {
                 }
             }
         }
-        .onAppear { spotify.setActive(true) }
-        .onDisappear { spotify.setActive(false) }
+        .onAppear {
+            if pollsWhenShown {
+                spotify.setActive(true)
+            }
+        }
+        .onDisappear {
+            if pollsWhenShown {
+                spotify.setActive(false)
+            }
+        }
     }
 
     private func playing(_ track: SpotifyController.Track) -> some View {

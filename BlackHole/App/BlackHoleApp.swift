@@ -38,6 +38,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         floatingButtonController = FloatingButtonController(services: services)
 
         let args = UserDefaults.standard
+        // `-demoData YES -demoReel YES` plays the app through itself, for recording clips.
+        if args.bool(forKey: "demoReel") {
+            DemoReel.start(services)
+        }
         // `-startFocus 25` starts a focus session of that many minutes on launch (0 = stopwatch).
         if args.object(forKey: "startFocus") != nil {
             let minutes = args.integer(forKey: "startFocus")

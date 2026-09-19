@@ -210,11 +210,32 @@ final class FocusEngine {
         defaults.set(try? JSONEncoder().encode(s), forKey: Self.snapshotKey)
     }
 
+    /// Writes a session that finished while the app was closed into history, and starts idle.
+    private func closeFinishedSession(_ s: Snapshot) {
+        sessionID = s.sessionID
+        accumulated = s.accumulated
+        if let session = currentSession() {
+            session.accumulatedSec = s.accumulated
+            // It ended when it ran out, not when the app happened to open again.
+            session.endedAt = session.startedAt.addingTimeInterval(s.accumulated)
+        }
+        sessionID = nil
+        accumulated = 0
+        phase = .idle
+        save()
+    }
+
     private func restore() {
         guard let data = defaults.data(forKey: Self.snapshotKey),
               let s = try? JSONDecoder().decode(Snapshot.self, from: data) else { return }
         presetSec = s.presetSec
         guard s.phase != .idle else { return }
+        // A finished timer has already chimed and been seen. Restoring it would park "Done" in the
+        // notch forever, days after the session ended, with no way to read it as anything but stuck.
+        if s.phase == .finished {
+            closeFinishedSession(s)
+            return
+        }
         phase = s.phase
         targetSec = s.targetSec
         taskID = s.taskID

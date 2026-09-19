@@ -8,6 +8,7 @@ struct WorkspaceView: View {
             TimerCard().frame(width: 172)
             NotepadCard().frame(width: 182)
             EventsCard().frame(width: 152)
+            NowPlayingCard().frame(width: 168)
         }
     }
 }

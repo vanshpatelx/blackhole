@@ -7,6 +7,7 @@ enum Palette {
     static let timer = Color(hex: 0x948BAE)
     static let notepad = Color(hex: 0xA09A5E)
     static let events = Color(hex: 0x8199AE)
+    static let music = Color(hex: 0xB08A86)
     static let insightsSummary = tasks
     static let insightsChart = timer
 

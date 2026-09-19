@@ -388,3 +388,14 @@ final class MeetingIslandTests: XCTestCase {
         XCTAssertNil(service.imminentMeeting())
     }
 }
+
+final class AllowedHostTests: XCTestCase {
+    func testTailnetAndTunnelHostsAreNotRebinding() {
+        // Rebinding needs DNS the attacker hands out. They can't be given a *.ts.net or a
+        // *.getblackhole.app name, so recognising those hosts doesn't reopen the hole that
+        // prefix-matching did — these still have to be rejected.
+        XCTAssertFalse(MCPServer.isLoopbackAuthority("machine.tailnet.ts.net", port: 52321))
+        XCTAssertFalse(MCPServer.isLoopbackAuthority("mcp-8957cee3.getblackhole.app", port: 52321))
+        XCTAssertFalse(MCPServer.isLoopbackAuthority("localhost.attacker.com:52321", port: 52321))
+    }
+}

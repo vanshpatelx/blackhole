@@ -95,8 +95,12 @@ final class MCPTunnel {
         return base.appending(path: "mcp").appending(path: token)
     }
 
+    /// Bumped by every start and stop, so a slow enrollment can tell it has been superseded.
+    private var startGeneration = 0
+
     func start(localPort: UInt16) {
         stop()
+        startGeneration &+= 1
         UserDefaults.standard.set(true, forKey: Self.enabledKey)
 
         if Self.provider == .hosted {
@@ -186,6 +190,8 @@ final class MCPTunnel {
 
     func stop(disable: Bool = false) {
         restartWork?.cancel()
+        // Anything still enrolling belongs to a start we are abandoning.
+        startGeneration &+= 1
         if disable {
             UserDefaults.standard.set(false, forKey: Self.enabledKey)
         }
@@ -218,6 +224,7 @@ final class MCPTunnel {
 
     /// Enrolls once, then runs this Mac's own tunnel for its permanent hostname.
     private func startHosted(localPort: UInt16) {
+        let generation = startGeneration
         // The hosted tunnel's ingress is fixed to the default port when the address is created, and
         // the token we hold can't rewrite it. If we ended up on another port, publishing the address
         // would point it at whatever else holds 52321, so refuse instead.
@@ -229,7 +236,8 @@ final class MCPTunnel {
         Task { @MainActor in
             do {
                 let enrollment = try await HostedTunnel.enroll()
-                guard Self.isEnabled else { return }
+                // Enrolling takes a round trip, in which the port may have changed under us.
+                guard Self.isEnabled, generation == self.startGeneration else { return }
 
                 let binary: String = if let existing = Self.cloudflaredPath {
                     existing
@@ -242,7 +250,7 @@ final class MCPTunnel {
                         }
                     }.path
                 }
-                guard Self.isEnabled else { return }
+                guard Self.isEnabled, generation == self.startGeneration else { return }
 
                 self.runCloudflared(
                     binary: binary,

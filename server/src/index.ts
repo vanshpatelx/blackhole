@@ -90,7 +90,11 @@ function randomSecret(): string {
  * fraction of a second once, and makes bulk registration expensive.
  */
 
-async function challenge(env: Env): Promise<Response> {
+async function challenge(request: Request, env: Env): Promise<Response> {
+  // Each puzzle costs us a KV write, so handing them out is limited the same way enrolling is.
+  if (await rateLimited(env, request)) {
+    return json({ error: "Too many requests. Try again later." }, 429);
+  }
   const bytes = crypto.getRandomValues(new Uint8Array(16));
   const nonce = [...bytes].map((b) => b.toString(16).padStart(2, "0")).join("");
   await env.INSTALLS.put(`nonce:${nonce}`, "1", { expirationTtl: 600 });
@@ -267,7 +271,12 @@ export default {
       if (request.method === "POST" && url.pathname === "/v1/enroll") return await enroll(request, env);
       if (request.method === "POST" && url.pathname === "/v1/revoke") return await revoke(request, env);
       if (url.pathname === "/health") return json({ ok: true });
-      if (url.pathname === "/v1/challenge") return await challenge(env);
+      if (url.pathname === "/v1/challenge") {
+        if (request.method !== "GET" && request.method !== "POST") {
+          return json({ error: "Method not allowed" }, 405);
+        }
+        return await challenge(request, env);
+      }
       if (url.pathname === "/v1/diagnose") {
         // Setup aid, not public: it reports which Cloudflare permissions the token has.
         if (!env.DIAGNOSE_KEY || url.searchParams.get("key") !== env.DIAGNOSE_KEY) {

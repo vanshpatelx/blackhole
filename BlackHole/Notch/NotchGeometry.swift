@@ -16,7 +16,7 @@ struct NotchGeometry: Equatable {
     /// Black border between the cards and the edge of the panel, on the sides and bottom.
     static let inset: CGFloat = 10
     /// Width of the card row itself.
-    static let contentWidth: CGFloat = 840
+    static let contentWidth: CGFloat = 1016
     static let expandedWidth: CGFloat = contentWidth + 2 * (flare + inset)
     static let cardsHeight: CGFloat = 266
     /// Extra transparent room around the drawn shape so shadows aren't clipped.

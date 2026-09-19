@@ -11,6 +11,7 @@ final class AppServices {
     let dayClock = DayClock()
     let focus: FocusEngine
     let calendar = CalendarService()
+    let spotify = SpotifyController()
     let notch = NotchViewModel()
     let mascot = MascotMoodCenter()
     let taskActions: TaskActions
@@ -100,6 +101,7 @@ extension View {
             .environment(services.dayClock)
             .environment(services.focus)
             .environment(services.calendar)
+            .environment(services.spotify)
             .environment(services.notch)
             .environment(services.taskActions)
             .environment(services.mascot)

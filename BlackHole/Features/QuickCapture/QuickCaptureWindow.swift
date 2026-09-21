@@ -38,10 +38,12 @@ final class QuickCaptureController {
     private func show() {
         let geometry = services.notch.geometry
         let size = CGSize(width: 520, height: 56)
+        // Clear of the menu bar row entirely: hanging from the screen top puts the bar's upper half
+        // inside the notch, which reads as a collision rather than as something dropping out of it.
+        let menuBarRow = geometry.hasNotch ? geometry.notchSize.height : 0
         let frame = NSRect(
             x: geometry.screenFrame.midX - size.width / 2,
-            // Just under the notch, so it reads as having come out of it.
-            y: geometry.topY - size.height - 10,
+            y: geometry.topY - menuBarRow - size.height - 12,
             width: size.width,
             height: size.height
         )

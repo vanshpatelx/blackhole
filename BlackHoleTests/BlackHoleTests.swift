@@ -551,3 +551,48 @@ final class QuickParseRepeatTests: XCTestCase {
         XCTAssertNil(parse("every day"))
     }
 }
+
+final class CommandParseTests: XCTestCase {
+    private let cal = Calendar.current
+    private lazy var now = cal.date(from: DateComponents(year: 2026, month: 9, day: 16, hour: 10))!
+
+    private func parse(_ s: String) -> Command? {
+        Command.parse(s, now: now, calendar: cal)
+    }
+
+    func testFocusTakesMinutesAndASubject() {
+        XCTAssertEqual(parse("focus 45 on launch post"), .startFocus(minutes: 45, on: "launch post"))
+        XCTAssertEqual(parse("focus 25"), .startFocus(minutes: 25, on: nil))
+        XCTAssertEqual(parse("focus 45m on the post"), .startFocus(minutes: 45, on: "the post"))
+        // No number is a stopwatch, which is what `nil` minutes means downstream.
+        XCTAssertEqual(parse("focus on the post"), .startFocus(minutes: nil, on: "the post"))
+    }
+
+    func testBareVerbsAreTheOnesPeopleType() {
+        XCTAssertEqual(parse("pause"), .pauseFocus)
+        XCTAssertEqual(parse("resume"), .resumeFocus)
+        XCTAssertEqual(parse("stop"), .stopFocus)
+        XCTAssertEqual(parse("join"), .joinMeeting)
+        XCTAssertEqual(parse("what did I do this week"), .insights)
+        XCTAssertEqual(parse("next"), .music(.next))
+    }
+
+    func testNoteKeepsItsText() {
+        XCTAssertEqual(parse("note call mika at 4"), .note("call mika at 4"))
+        XCTAssertNil(parse("note"), "A note with nothing in it isn't worth writing")
+    }
+
+    func testAnythingElseIsATask() {
+        guard case let .task(result)? = parse("write the launch tweet") else {
+            return XCTFail("Expected a task")
+        }
+        XCTAssertEqual(result.title, "write the launch tweet")
+
+        // A verb inside a sentence must not hijack it.
+        guard case let .task(second)? = parse("email the stop sign photos tomorrow") else {
+            return XCTFail("Expected a task")
+        }
+        XCTAssertEqual(second.title, "email the stop sign photos")
+        XCTAssertEqual(second.dayKey, "2026-09-17")
+    }
+}

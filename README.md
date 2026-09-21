@@ -31,6 +31,7 @@ It's free, open source, and your data never leaves your Mac.
 - **Focus timer**: countdown or stopwatch with pause, resume and +5 minutes. While it runs, the notch becomes a live island: a progress ring on one side and the countdown on the other. It pauses when your Mac sleeps.
 - **Daily notepad**: saves as you type. Put the cursor on a line and press <kbd>⌘</kbd><kbd>↩</kbd> to turn it into a task.
 - **Events from all your calendars**: iCloud, Google (as many accounts as you like), Outlook/Exchange and subscribed calendars, color-coded and read-only. Pick which calendars show in **Settings → Calendars**.
+- **Repeating tasks**: daily, every weekday or weekly, from the task's menu or by typing "standup every weekday". The next occurrence appears on its own; a missed one is left where it was rather than following you around.
 - **Quick capture**: press **⌥Space** anywhere and an input drops out of the notch. Type "call mika tomorrow at 3pm", press Return, and it's a task for tomorrow with a reminder — the day and time are lifted out of the sentence. Escape puts it away.
 - **Your next meeting, in the notch**: five minutes before it starts the notch counts down to it, and clicking joins the call — Zoom, Meet, Teams, Webex and the rest, wherever the invite hid the link. Right-click to dismiss one.
 - **Insights**: focus time, completed vs. planned tasks, active days and your streak over the last week.
@@ -104,7 +105,7 @@ The same URL works everywhere, so there's nothing else to configure.
 
 | Tool | What it does |
 |---|---|
-| `list_tasks`, `add_task`, `update_task`, `delete_task` | Manage tasks for any day |
+| `list_tasks`, `add_task`, `update_task`, `delete_task` | Manage tasks for any day, including repeats |
 | `start_focus`, `pause_focus`, `resume_focus`, `stop_focus`, `focus_status` | Control the focus timer |
 | `read_note`, `append_note` | Read and add to the daily notepad (never overwrites) |
 | `get_insights` | Planned/completed tasks and focus minutes per day, plus streak |

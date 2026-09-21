@@ -453,3 +453,101 @@ final class QuickParseTests: XCTestCase {
         XCTAssertNil(parse("tomorrow"), "A day with no task isn't a task")
     }
 }
+
+@MainActor
+final class RecurrenceTests: XCTestCase {
+    private var container: ModelContainer!
+    private var actions: TaskActions!
+    private let cal = Calendar.current
+
+    override func setUp() async throws {
+        container = try ModelContainer(
+            for: TaskItem.self, FocusSession.self, DailyNote.self,
+            configurations: ModelConfiguration(isStoredInMemoryOnly: true)
+        )
+        actions = TaskActions(context: container.mainContext, focus: FocusEngine(
+            context: container.mainContext,
+            defaults: UserDefaults(suiteName: "RecurrenceTests-\(UUID())")!
+        ))
+    }
+
+    private func day(_ offset: Int) -> String {
+        DayKey.of(cal.date(byAdding: .day, value: offset, to: .now)!)
+    }
+
+    func testWeekdaysSkipsTheWeekend() throws {
+        let rule = Recurrence.weekdays
+        // Friday the 18th of September 2026 → Saturday is skipped, Monday is not.
+        let friday = try XCTUnwrap(cal.date(from: DateComponents(year: 2026, month: 9, day: 18)))
+        let saturday = try XCTUnwrap(cal.date(byAdding: .day, value: 1, to: friday))
+        let monday = try XCTUnwrap(cal.date(byAdding: .day, value: 3, to: friday))
+        XCTAssertFalse(rule.occurs(on: saturday, anchor: friday))
+        XCTAssertTrue(rule.occurs(on: monday, anchor: friday))
+        XCTAssertFalse(rule.occurs(on: friday, anchor: friday), "The anchor day already has its own")
+    }
+
+    func testWeeklyLandsOnTheSameWeekday() throws {
+        let rule = Recurrence.weekly
+        let anchor = try XCTUnwrap(cal.date(from: DateComponents(year: 2026, month: 9, day: 16)))
+        XCTAssertTrue(try rule.occurs(on: XCTUnwrap(cal.date(byAdding: .day, value: 7, to: anchor)), anchor: anchor))
+        XCTAssertFalse(try rule.occurs(on: XCTUnwrap(cal.date(byAdding: .day, value: 3, to: anchor)), anchor: anchor))
+    }
+
+    func testTodaysOccurrenceIsCreatedOnce() throws {
+        let task = try XCTUnwrap(actions.add("standup", dayKey: day(-1)))
+        actions.setRecurrence(task, .daily)
+
+        actions.materializeRecurring()
+        XCTAssertEqual(actions.tasks(for: DayKey.today).filter { $0.title == "standup" }.count, 1)
+
+        // Running again must not pile up duplicates — it runs on every day change and every launch.
+        actions.materializeRecurring()
+        XCTAssertEqual(actions.tasks(for: DayKey.today).filter { $0.title == "standup" }.count, 1)
+    }
+
+    func testAMissedRepeatDoesNotRollOver() throws {
+        let repeating = try XCTUnwrap(actions.add("standup", dayKey: day(-1)))
+        actions.setRecurrence(repeating, .daily)
+        _ = actions.add("one-off thing", dayKey: day(-1))
+
+        actions.rollOverUnfinishedTasks()
+
+        let today = actions.tasks(for: DayKey.today)
+        XCTAssertEqual(today.filter { $0.title == "standup" }.count, 1, "A fresh occurrence, not yesterday's")
+        XCTAssertEqual(today.filter { $0.title == "one-off thing" }.count, 1, "Ordinary tasks still follow you")
+        XCTAssertEqual(actions.tasks(for: day(-1)).filter { $0.title == "standup" }.count, 1, "Yesterday's is left as missed")
+    }
+
+    func testStoppingARepeatLeavesTheTaskAlone() throws {
+        let task = try XCTUnwrap(actions.add("standup", dayKey: day(-1)))
+        actions.setRecurrence(task, .daily)
+        actions.setRecurrence(task, nil)
+        actions.materializeRecurring()
+        XCTAssertTrue(actions.tasks(for: DayKey.today).isEmpty)
+        XCTAssertNil(task.seriesID)
+    }
+}
+
+final class QuickParseRepeatTests: XCTestCase {
+    private let cal = Calendar.current
+    private lazy var now = cal.date(from: DateComponents(year: 2026, month: 9, day: 16, hour: 10))!
+
+    private func parse(_ s: String) -> QuickParse.Result? {
+        QuickParse.parse(s, now: now, calendar: cal)
+    }
+
+    func testRepeatPhrasesComeOffTheEnd() {
+        XCTAssertEqual(parse("standup every weekday")?.recurrence, .weekdays)
+        XCTAssertEqual(parse("standup every weekday")?.title, "standup")
+        XCTAssertEqual(parse("water the plants every day")?.recurrence, .daily)
+        XCTAssertEqual(parse("team sync every week")?.recurrence, .weekly)
+        XCTAssertEqual(parse("journal daily")?.recurrence, .daily)
+    }
+
+    func testARepeatIsNotInventedFromOrdinaryWords() {
+        XCTAssertNil(parse("plan the every-day carry post")?.recurrence)
+        XCTAssertNil(parse("write the tweet")?.recurrence)
+        // The phrase alone is not a task.
+        XCTAssertNil(parse("every day"))
+    }
+}

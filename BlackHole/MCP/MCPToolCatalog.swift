@@ -28,7 +28,12 @@ extension MCPRouter {
                 "title": ["type": "string", "description": "Short, actionable task title"],
                 "day": dayProperty,
                 "time_limit_minutes": ["type": "integer", "minimum": 1, "description": "Focus time limit in minutes"],
-                "remind_at": ["type": "string", "description": "ISO 8601 date-time for a reminder notification"]
+                "remind_at": ["type": "string", "description": "ISO 8601 date-time for a reminder notification"],
+                "repeat": [
+                    "type": "string",
+                    "enum": ["daily", "weekdays", "weekly"],
+                    "description": "Make the task repeat. The next occurrence appears on its own; missed ones are not stacked up."
+                ]
             ], required: ["title"])
         ],
         [

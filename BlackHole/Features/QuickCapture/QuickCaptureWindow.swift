@@ -98,6 +98,9 @@ final class QuickCaptureController {
         if let reminder = parsed.reminder {
             services.taskActions.setReminder(task, at: reminder)
         }
+        if let rule = parsed.recurrence {
+            services.taskActions.setRecurrence(task, rule)
+        }
         services.mascot.celebrate()
     }
 }
@@ -125,7 +128,7 @@ private struct QuickCaptureView: View {
                 .focused($focused)
                 .onSubmit { onSubmit(text) }
 
-            if let preview, preview.dayKey != DayKey.today || preview.reminder != nil {
+            if let preview, preview.dayKey != DayKey.today || preview.reminder != nil || preview.recurrence != nil {
                 Text(summary(preview))
                     .font(.system(size: 11.5, weight: .medium))
                     .foregroundStyle(.white.opacity(0.65))
@@ -154,7 +157,13 @@ private struct QuickCaptureView: View {
             : (result.dayKey == DayKey.adding(days: 1, to: DayKey.today)
                 ? "Tomorrow"
                 : day.formatted(.dateTime.weekday(.abbreviated).day().month(.abbreviated)))
-        guard let reminder = result.reminder else { return dayText }
-        return "\(dayText) · \(reminder.formatted(date: .omitted, time: .shortened))"
+        var parts = [dayText]
+        if let reminder = result.reminder {
+            parts.append(reminder.formatted(date: .omitted, time: .shortened))
+        }
+        if let rule = result.recurrence {
+            parts = [rule.badge]
+        }
+        return parts.joined(separator: " · ")
     }
 }

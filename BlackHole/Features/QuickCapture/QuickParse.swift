@@ -10,6 +10,8 @@ enum QuickParse {
         var dayKey: String
         /// When to nudge, if a time was given.
         var reminder: Date?
+        /// Set when the sentence ended in something like "every weekday".
+        var recurrence: Recurrence?
     }
 
     static func parse(_ input: String, now: Date = .now, calendar: Calendar = .current) -> Result? {
@@ -19,6 +21,19 @@ enum QuickParse {
         var day = calendar.startOfDay(for: now)
         var matchedDay = false
         var time: (hour: Int, minute: Int)?
+        var repeats: Recurrence?
+
+        // "every weekday" is two words, so it comes off the end before anything else is considered.
+        // `>=` rather than `>`: "every day" on its own should leave nothing behind and be rejected
+        // as having no task in it, the same way a bare "tomorrow" is.
+        for length in [3, 2, 1] where words.count >= length {
+            let phrase = words.suffix(length).joined(separator: " ").lowercased()
+            if let rule = Recurrence.spoken(phrase) {
+                repeats = rule
+                words.removeLast(length)
+                break
+            }
+        }
 
         // Work from the end: that's where people put "tomorrow at 4".
         while let last = words.last {
@@ -58,7 +73,7 @@ enum QuickParse {
             }
         }
 
-        return Result(title: title, dayKey: DayKey.of(day), reminder: reminder)
+        return Result(title: title, dayKey: DayKey.of(day), reminder: reminder, recurrence: repeats)
     }
 
     /// "today", "tomorrow", "mon".."sunday" — as a number of days from now.

@@ -237,6 +237,9 @@ struct TaskRow: View {
                     if let limit = task.timeLimitSec {
                         Label("\(limit / 60)m", systemImage: "timer")
                     }
+                    if let rule = task.recurrence {
+                        Label(rule.badge, systemImage: "repeat")
+                    }
                     if let reminder = task.reminderAt, reminder > .now {
                         Label(
                             reminder.formatted(date: Calendar.current.isDateInToday(reminder) ? .omitted : .abbreviated, time: .shortened),
@@ -278,7 +281,7 @@ struct TaskRow: View {
     }
 
     private var hasMeta: Bool {
-        task.timeLimitSec != nil || (task.reminderAt.map { $0 > .now } ?? false) || isFocusTask
+        task.timeLimitSec != nil || task.recurrence != nil || (task.reminderAt.map { $0 > .now } ?? false) || isFocusTask
     }
 
     private func startRename() {
@@ -321,6 +324,15 @@ struct TaskMenuItems: View {
                 Button("Clear Reminder") { actions.setReminder(task, at: nil) }
             }
         } label: { Label("Remind Me", systemImage: "bell") }
+        Menu {
+            ForEach(Recurrence.allCases) { rule in
+                Button(rule.title) { actions.setRecurrence(task, rule) }
+            }
+            if task.recurrence != nil {
+                Divider()
+                Button("Don't Repeat") { actions.setRecurrence(task, nil) }
+            }
+        } label: { Label("Repeat", systemImage: "repeat") }
         Button { actions.moveToTomorrow(task) } label: { Label("Move to Tomorrow", systemImage: "arrow.right") }
         Button { actions.duplicate(task) } label: { Label("Duplicate", systemImage: "plus.square.on.square") }
         Divider()

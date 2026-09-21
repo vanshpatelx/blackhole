@@ -13,6 +13,24 @@ final class TaskItem {
     var timeLimitSec: Int?
     var reminderAt: Date?
     var createdAt: Date
+    /// How this task repeats, as a `Recurrence` raw value. Nil for a one-off, which is most of them.
+    var repeatRule: String?
+    /// Ties every occurrence of a repeating task together, so the next one can be worked out from
+    /// the most recent. Nil until a task is made to repeat.
+    var seriesID: UUID?
+
+    var recurrence: Recurrence? {
+        get { repeatRule.flatMap(Recurrence.init(rawValue:)) }
+        set {
+            repeatRule = newValue?.rawValue
+            if newValue != nil, seriesID == nil {
+                seriesID = UUID()
+            }
+            if newValue == nil {
+                seriesID = nil
+            }
+        }
+    }
 
     init(title: String, dayKey: String, sortIndex: Int) {
         id = UUID()

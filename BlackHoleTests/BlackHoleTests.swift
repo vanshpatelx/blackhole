@@ -399,3 +399,57 @@ final class AllowedHostTests: XCTestCase {
         XCTAssertFalse(MCPServer.isLoopbackAuthority("localhost.attacker.com:52321", port: 52321))
     }
 }
+
+final class QuickParseTests: XCTestCase {
+    private let cal = Calendar.current
+    /// A Wednesday, 10:00.
+    private lazy var now = cal.date(from: DateComponents(year: 2026, month: 9, day: 16, hour: 10))!
+
+    private func parse(_ s: String) -> QuickParse.Result? {
+        QuickParse.parse(s, now: now, calendar: cal)
+    }
+
+    func testPlainTextIsJustATaskForToday() {
+        let r = parse("write the launch tweet")
+        XCTAssertEqual(r?.title, "write the launch tweet")
+        XCTAssertEqual(r?.dayKey, "2026-09-16")
+        XCTAssertNil(r?.reminder)
+    }
+
+    func testTomorrowAndTimesComeOutOfTheTitle() throws {
+        XCTAssertEqual(parse("ship the dmg tomorrow")?.dayKey, "2026-09-17")
+        XCTAssertEqual(parse("ship the dmg tomorrow")?.title, "ship the dmg")
+
+        let r = parse("call mika tomorrow at 3pm")
+        XCTAssertEqual(r?.title, "call mika")
+        XCTAssertEqual(r?.dayKey, "2026-09-17")
+        XCTAssertEqual(try cal.component(.hour, from: XCTUnwrap(r?.reminder)), 15)
+    }
+
+    func testWeekdayNamesLandOnTheNextOne() {
+        // Wednesday → Friday is two days out; naming today's weekday means next week.
+        XCTAssertEqual(parse("review prs friday")?.dayKey, "2026-09-18")
+        XCTAssertEqual(parse("review prs wednesday")?.dayKey, "2026-09-23")
+        XCTAssertEqual(parse("review prs fri")?.dayKey, "2026-09-18")
+    }
+
+    func testATimeAlreadyPastMeansTomorrow() {
+        // It's 10:00, so "9am" can only sensibly mean tomorrow morning.
+        XCTAssertEqual(parse("standup 9am")?.dayKey, "2026-09-17")
+        // But naming the day is explicit, so leave it alone.
+        XCTAssertEqual(parse("standup today 9am")?.dayKey, "2026-09-16")
+    }
+
+    func testWordsInsideTheTitleAreLeftAlone() {
+        // Only trailing words are eaten, so a task can still be about a day.
+        XCTAssertEqual(parse("plan tomorrow's standup")?.title, "plan tomorrow's standup")
+        XCTAssertEqual(parse("buy 2 tickets")?.title, "buy 2 tickets")
+        XCTAssertNil(parse("buy 2 tickets")?.reminder, "A bare number isn't a time")
+    }
+
+    func testNothingUsableIsNothing() {
+        XCTAssertNil(parse(""))
+        XCTAssertNil(parse("   "))
+        XCTAssertNil(parse("tomorrow"), "A day with no task isn't a task")
+    }
+}

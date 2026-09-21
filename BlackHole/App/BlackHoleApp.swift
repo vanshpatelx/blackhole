@@ -21,6 +21,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     let dashboard = DashboardWindowController()
     private var notchController: NotchWindowController?
     private var floatingButtonController: FloatingButtonController?
+    private var quickCapture: QuickCaptureController?
     private var floatingWorkspaceController: FloatingWorkspaceController?
 
     func applicationWillTerminate(_ notification: Notification) {
@@ -36,6 +37,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         notchController = NotchWindowController(services: services)
         floatingWorkspaceController = FloatingWorkspaceController(services: services)
         floatingButtonController = FloatingButtonController(services: services)
+        quickCapture = QuickCaptureController(services: services)
 
         let args = UserDefaults.standard
         // `-demoData YES -demoReel YES` plays the app through itself, for recording clips.

@@ -164,13 +164,60 @@ final class TaskActions {
     func rollOverUnfinishedTasks() {
         let today = DayKey.today
         let d = FetchDescriptor<TaskItem>(predicate: #Predicate { $0.dayKey < today && $0.isDone == false })
-        guard let stale = try? context.fetch(d), !stale.isEmpty else { return }
+        guard let stale = try? context.fetch(d), !stale.isEmpty else {
+            materializeRecurring()
+            return
+        }
         var next = (tasks(for: today).map(\.sortIndex).max() ?? -1) + 1
         for t in stale.sorted(by: { ($0.dayKey, $0.sortIndex) < ($1.dayKey, $1.sortIndex) }) {
+            // A missed repeat is a missed occurrence, not a debt: today gets a fresh one instead of
+            // yesterday's standup following you around.
+            guard t.repeatRule == nil else { continue }
             t.dayKey = today
             t.sortIndex = next
             next += 1
         }
+        save()
+        materializeRecurring()
+    }
+
+    /// Creates today's occurrence of anything that repeats. Only today — being away for a week
+    /// should not bury you in a week of standups on the morning you come back.
+    func materializeRecurring(on dayKey: String = DayKey.today) {
+        guard let day = DayKey.date(dayKey) else { return }
+        let all = (try? context.fetch(FetchDescriptor<TaskItem>(predicate: #Predicate { $0.repeatRule != nil }))) ?? []
+        guard !all.isEmpty else { return }
+
+        var next = (tasks(for: dayKey).map(\.sortIndex).max() ?? -1) + 1
+        for (_, occurrences) in Dictionary(grouping: all, by: { $0.seriesID }) {
+            guard let latest = occurrences.max(by: { $0.dayKey < $1.dayKey }),
+                  let rule = latest.recurrence,
+                  let anchor = DayKey.date(latest.dayKey),
+                  latest.dayKey != dayKey,
+                  rule.occurs(on: day, anchor: anchor)
+            else { continue }
+
+            let copy = TaskItem(title: latest.title, dayKey: dayKey, sortIndex: next)
+            next += 1
+            copy.timeLimitSec = latest.timeLimitSec
+            copy.repeatRule = latest.repeatRule
+            copy.seriesID = latest.seriesID
+            // Keep the time of day of the reminder, on the new day.
+            if let was = latest.reminderAt {
+                let parts = Calendar.current.dateComponents([.hour, .minute], from: was)
+                copy.reminderAt = Calendar.current.date(bySettingHour: parts.hour ?? 9, minute: parts.minute ?? 0, second: 0, of: day)
+            }
+            context.insert(copy)
+            if let at = copy.reminderAt {
+                Notifier.schedule(id: copy.id.uuidString, title: "Black Hole", body: copy.title, at: at)
+            }
+        }
+        save()
+    }
+
+    /// Makes a task repeat, or stops it repeating.
+    func setRecurrence(_ task: TaskItem, _ rule: Recurrence?) {
+        task.recurrence = rule
         save()
     }
 

@@ -125,6 +125,12 @@ final class MCPRouter {
                 guard let date = Self.parseDate(remind) else { throw ToolError.invalid("`remind_at` must be an ISO 8601 date-time") }
                 tasks.setReminder(task, at: date)
             }
+            if let raw = args["repeat"] as? String, !raw.isEmpty {
+                guard let rule = Recurrence(rawValue: raw) else {
+                    throw ToolError.invalid("`repeat` must be one of: daily, weekdays, weekly")
+                }
+                tasks.setRecurrence(task, rule)
+            }
             return ["task": taskJSON(task)]
 
         case "update_task":
@@ -238,6 +244,9 @@ final class MCPRouter {
         ]
         if let limit = t.timeLimitSec {
             json["time_limit_minutes"] = limit / 60
+        }
+        if let rule = t.recurrence {
+            json["repeat"] = rule.rawValue
         }
         if let reminder = t.reminderAt {
             json["remind_at"] = Self.iso(reminder)

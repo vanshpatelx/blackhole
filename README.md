@@ -32,7 +32,18 @@ It's free, open source, and your data never leaves your Mac.
 - **Daily notepad**: saves as you type. Put the cursor on a line and press <kbd>⌘</kbd><kbd>↩</kbd> to turn it into a task.
 - **Events from all your calendars**: iCloud, Google (as many accounts as you like), Outlook/Exchange and subscribed calendars, color-coded and read-only. Pick which calendars show in **Settings → Calendars**.
 - **Repeating tasks**: daily, every weekday or weekly, from the task's menu or by typing "standup every weekday". The next occurrence appears on its own; a missed one is left where it was rather than following you around.
-- **Quick capture**: press **⌥Space** anywhere and an input drops out of the notch. Type "call mika tomorrow at 3pm", press Return, and it's a task for tomorrow with a reminder — the day and time are lifted out of the sentence. Escape puts it away.
+- **Command bar**: press **⌥Space** anywhere and an input drops out of the notch. Type "call mika tomorrow at 3pm" and it's a task for tomorrow with a reminder — the day and time are lifted out of the sentence. It also takes commands:
+
+  | Typed | Does |
+  |---|---|
+  | `focus 45 on launch post` | Starts a 45-minute session on that task |
+  | `pause`, `resume`, `stop` | Controls the timer |
+  | `join` | Opens your next meeting |
+  | `note call mika at 4` | Appends to today's notepad |
+  | `what did I do this week` | Opens Insights |
+  | `play`, `next`, `previous` | Spotify |
+
+  Anything that isn't a command is a task. Escape puts the bar away.
 - **Your next meeting, in the notch**: five minutes before it starts the notch counts down to it, and clicking joins the call — Zoom, Meet, Teams, Webex and the rest, wherever the invite hid the link. Right-click to dismiss one.
 - **Insights**: focus time, completed vs. planned tasks, active days and your streak over the last week.
 - **Floating button**: a draggable button for any display (great with external monitors). Click it and the whole workspace opens right next to it.

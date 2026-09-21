@@ -62,8 +62,9 @@ final class QuickCaptureController {
         panel.isReleasedWhenClosed = false
 
         let view = QuickCaptureView(
-            onSubmit: { [weak self] text in self?.commit(text) },
-            onCancel: { [weak self] in self?.hide() }
+            onSubmit: { [weak self] text in self?.commit(text) ?? nil },
+            onCancel: { [weak self] in self?.hide() },
+            onFinished: { [weak self] in self?.hide() }
         )
         .blackHoleEnvironment(services)
 
@@ -91,25 +92,28 @@ final class QuickCaptureController {
         panel = nil
     }
 
-    private func commit(_ text: String) {
-        defer { hide() }
-        guard let parsed = QuickParse.parse(text) else { return }
-        guard let task = services.taskActions.add(parsed.title, dayKey: parsed.dayKey) else { return }
-        if let reminder = parsed.reminder {
-            services.taskActions.setReminder(task, at: reminder)
+    /// - Returns: A confirmation for the bar to show, or nil when it should just close.
+    private func commit(_ text: String) -> String? {
+        guard let command = Command.parse(text) else {
+            hide()
+            return nil
         }
-        if let rule = parsed.recurrence {
-            services.taskActions.setRecurrence(task, rule)
+        let answer = CommandRunner(services: services).run(command)
+        if answer == nil {
+            hide()
         }
-        services.mascot.celebrate()
+        return answer
     }
 }
 
 private struct QuickCaptureView: View {
-    let onSubmit: (String) -> Void
+    /// Returns what to show back, or nil when the bar has already closed.
+    let onSubmit: (String) -> String?
     let onCancel: () -> Void
+    let onFinished: () -> Void
 
     @State private var text = ""
+    @State private var answer: String?
     @FocusState private var focused: Bool
 
     /// What the sentence will turn into, shown while typing so the parsing isn't a surprise.
@@ -121,14 +125,28 @@ private struct QuickCaptureView: View {
         HStack(spacing: 10) {
             AppMark(size: 22)
 
-            TextField("Add to your day…", text: $text)
-                .textFieldStyle(.plain)
-                .font(.system(size: 15, weight: .medium))
-                .foregroundStyle(.white)
-                .focused($focused)
-                .onSubmit { onSubmit(text) }
+            if let answer {
+                Text(answer)
+                    .font(.system(size: 15, weight: .medium))
+                    .foregroundStyle(.white)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .transition(.opacity)
+            } else {
+                TextField("Add to your day, or type a command…", text: $text)
+                    .textFieldStyle(.plain)
+                    .font(.system(size: 15, weight: .medium))
+                    .foregroundStyle(.white)
+                    .focused($focused)
+                    .disabled(answer != nil)
+                    .onSubmit {
+                        guard let reply = onSubmit(text) else { return }
+                        // Confirmations are worth a beat on screen; the bar closes itself after.
+                        answer = reply
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 1.6) { onFinished() }
+                    }
+            }
 
-            if let preview, preview.dayKey != DayKey.today || preview.reminder != nil || preview.recurrence != nil {
+            if answer == nil, let preview, preview.dayKey != DayKey.today || preview.reminder != nil || preview.recurrence != nil {
                 Text(summary(preview))
                     .font(.system(size: 11.5, weight: .medium))
                     .foregroundStyle(.white.opacity(0.65))

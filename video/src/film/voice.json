@@ -5,8 +5,9 @@
   "mix": {
     "music": 0.6,
     "voiceRms": -15,
-    "clearance": 16,
-    "minDuck": 0.07
+    "clearance": 13,
+    "minDuck": 0.07,
+    "speechBandDip": 6
   },
   "lines": [
     {

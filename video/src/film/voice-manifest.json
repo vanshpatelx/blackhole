@@ -5,43 +5,43 @@
       "file": "voice/line-0.wav",
       "from": 3,
       "frames": 66,
-      "duck": 0.545
+      "duck": 0.857
     },
     {
       "file": "voice/line-1.wav",
       "from": 108,
       "frames": 29,
-      "duck": 0.407
+      "duck": 0.696
     },
     {
       "file": "voice/line-2.wav",
       "from": 168,
       "frames": 55,
-      "duck": 0.093
+      "duck": 0.132
     },
     {
       "file": "voice/line-3.wav",
       "from": 262,
       "frames": 36,
-      "duck": 0.131
+      "duck": 0.186
     },
     {
       "file": "voice/line-4.wav",
       "from": 322,
       "frames": 57,
-      "duck": 0.137
+      "duck": 0.196
     },
     {
       "file": "voice/line-5.wav",
       "from": 421,
       "frames": 68,
-      "duck": 0.141
+      "duck": 0.2
     },
     {
       "file": "voice/line-6.wav",
       "from": 629,
       "frames": 58,
-      "duck": 0.354
+      "duck": 0.561
     }
   ]
 }

@@ -40,6 +40,15 @@ for the logo. They share a small room reverb so they sound like one space, and d
 so a keystroke never covers a word. A faint breathing room tone sits under it all, and drops out for
 the half-beat of silence before the drop.
 
+**It's checked like a mix engineer would.** `node scripts/analyze.mjs` (after a mix) reports loudness
+over time, tonal balance per section, how clearly the voice sits over everything else — overall
+and in 1–4 kHz, where words are understood — any effect that spikes near the voice, the stereo
+width, and whether the mix survives being folded to one phone speaker. The first audit found two
+lines masked in the speech band, a mono mix, and energy below 60 Hz no phone can play. Now the
+music is re-EQed and dips specifically in the speech band under each line (so it can stay fuller
+overall), effects are panned to where things happen on screen, reverb and room tone are truly
+stereo, and a limiter keeps the hits from spiking.
+
 **The soundtrack is generated, not licensed.** `scripts/audio.mjs` composes and synthesizes the
 music and every sound effect — plucked strings, pads, drums, a riser into the drop — with no
 samples and nothing borrowed, so the film can be posted anywhere. Running it is deterministic, so

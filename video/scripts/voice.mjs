@@ -6,6 +6,7 @@
 // cut: a line that overruns its section or runs into the next one is reported, not silently clipped.
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { KokoroTTS } from "kokoro-js";
+import { readWav } from "./lib/dsp.mjs";
 
 const timing = JSON.parse(readFileSync(new URL("../src/film/timing.json", import.meta.url)));
 const script = JSON.parse(readFileSync(new URL("../src/film/voice.json", import.meta.url)));
@@ -18,14 +19,9 @@ let total = 0;
 for (const s of timing.sections) { starts[s.name] = { from: total, to: total + s.bars * BAR, factor: (timing.baseBeat / timing.beat) * s.speed }; total += s.bars * BAR; }
 const frameOf = (section, at) => starts[section].from + Math.round(at / starts[section].factor);
 
-// The music bed, to work out how far it has to come down under each line.
-const music = (() => {
-  const b = readFileSync(new URL("../public/audio/music.wav", import.meta.url));
-  const n = (b.length - 44) / 2;
-  const d = new Float32Array(n);
-  for (let i = 0; i < n; i++) d[i] = b.readInt16LE(44 + i * 2) / 32768;
-  return { sr: b.readUInt32LE(24), d };
-})();
+// The music bed, to work out how far it has to come down under each line. It's stereo, so read it
+// properly and fold it to mono for measuring — reading it as mono would double every time window.
+const music = (() => { const w = readWav(new URL("../public/audio/music.wav", import.meta.url).pathname); return { sr: w.sr, d: w.data }; })();
 const rmsDb = (d, a = 0, z = d.length) => {
   let s = 0;
   for (let i = a; i < z; i++) s += d[i] * d[i];

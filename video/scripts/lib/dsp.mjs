@@ -132,3 +132,68 @@ export function place(dst, src, seconds, gain = 1) {
     if (j >= 0 && j < dst.length) dst[j] += src[i] * gain;
   }
 }
+
+// ── Stereo ───────────────────────────────────────────────────────────────────────────────────
+
+/** Constant-power pan, scaled so dead centre is unity in both channels. -1 left … +1 right. */
+export const pan = (p) => [Math.cos(((p + 1) * Math.PI) / 4) * Math.SQRT2, Math.sin(((p + 1) * Math.PI) / 4) * Math.SQRT2];
+
+/** Adds a mono `src` into stereo [L, R] at `seconds`, panned. */
+export function placeStereo(L, R, src, seconds, gain = 1, p = 0) {
+  const [gl, gr] = pan(p);
+  const s0 = Math.floor(seconds * SR);
+  for (let i = 0; i < src.length; i++) {
+    const j = s0 + i;
+    if (j >= 0 && j < L.length) { L[j] += src[i] * gain * gl; R[j] += src[i] * gain * gr; }
+  }
+}
+
+export function writeWavStereo(path, L, R, sr = SR) {
+  const n = Math.min(L.length, R.length);
+  const out = Buffer.alloc(44 + n * 4);
+  out.write("RIFF", 0); out.writeUInt32LE(36 + n * 4, 4); out.write("WAVE", 8);
+  out.write("fmt ", 12); out.writeUInt32LE(16, 16); out.writeUInt16LE(1, 20); out.writeUInt16LE(2, 22);
+  out.writeUInt32LE(sr, 24); out.writeUInt32LE(sr * 4, 28); out.writeUInt16LE(4, 32); out.writeUInt16LE(16, 34);
+  out.write("data", 36); out.writeUInt32LE(n * 4, 40);
+  for (let i = 0; i < n; i++) {
+    out.writeInt16LE(Math.round(Math.max(-1, Math.min(1, L[i])) * 32767), 44 + i * 4);
+    out.writeInt16LE(Math.round(Math.max(-1, Math.min(1, R[i])) * 32767), 46 + i * 4);
+  }
+  writeFileSync(path, out);
+}
+
+/** Reads a WAV as [L, R] (a mono file comes back as the same channel twice). */
+export function readWavStereo(path) {
+  const b = readFileSync(path);
+  let off = 12, fmt = null;
+  while (off < b.length) {
+    const id = b.toString("ascii", off, off + 4), size = b.readUInt32LE(off + 4);
+    if (id === "fmt ") fmt = { ch: b.readUInt16LE(off + 10), sr: b.readUInt32LE(off + 12), bits: b.readUInt16LE(off + 22) };
+    if (id === "data") {
+      const bytes = fmt.bits / 8, frames = Math.floor(size / (bytes * fmt.ch));
+      const L = new Float32Array(frames), R = new Float32Array(frames);
+      const read = (p) => (fmt.bits === 16 ? b.readInt16LE(p) / 32768 : b.readFloatLE(p));
+      for (let i = 0; i < frames; i++) {
+        const p = off + 8 + i * fmt.ch * bytes;
+        L[i] = read(p);
+        R[i] = fmt.ch > 1 ? read(p + bytes) : L[i];
+      }
+      return { sr: fmt.sr, L, R };
+    }
+    off += 8 + size + (size % 2);
+  }
+  throw new Error(`no audio in ${path}`);
+}
+
+/**
+ * A three-way split that always sums back to the input exactly: low below `lo`, high above `hi`,
+ * and the middle as whatever is left. Turning the middle down is then a clean dynamic EQ — and at
+ * unity it is perfectly transparent, because nothing was taken that isn't put back.
+ */
+export function splitThree(d, lo, hi) {
+  const low = biquad(Float32Array.from(d), "lowpass", lo, 0.707);
+  const high = biquad(Float32Array.from(d), "highpass", hi, 0.707);
+  const mid = new Float32Array(d.length);
+  for (let i = 0; i < d.length; i++) mid[i] = d[i] - low[i] - high[i];
+  return { low, mid, high };
+}

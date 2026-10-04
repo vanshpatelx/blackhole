@@ -14,6 +14,12 @@ Black Hole is a native macOS app written in Swift and SwiftUI, with no Electron 
 
 The whole app is MIT licensed and developed in the open at [github.com/vanshpatelx/blackhole](https://github.com/vanshpatelx/blackhole). Every change lands through a pull request with continuous integration running lint and tests. Releases are built by GitHub Actions from a tag, so the DMG you download is built from the source you can read. If something is wrong, the issue tracker is the fastest way to reach us.
 
+## Inspiration and credit
+
+Black Hole exists because of [NotchOwl](https://www.notchowl.com). Seeing what a notch app could be is what started this, and the idea of keeping a day's work in the notch rather than in a window is theirs.
+
+This is an independent implementation, not a copy. Every line was written from scratch in Swift and SwiftUI; we have never had access to NotchOwl's source, and none of its code, assets or text is in this project. The whole thing is open on GitHub, so you can check that rather than take our word for it. We are not affiliated with NotchOwl and they have not endorsed this — if you want a polished, commercially supported notch app, go and buy theirs. What is different here is that Black Hole is free and open source, and it talks to AI assistants.
+
 ## AI access
 
 Black Hole ships a Model Context Protocol server, so Claude, ChatGPT, Cursor and Claude Code can work with your day: adding tasks, starting focus sessions, reading back what you spent your week on. It runs on your own Mac and answers only while the app is open. Your task data never passes through a server of ours.

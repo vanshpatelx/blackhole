@@ -178,6 +178,16 @@ BlackHole/
 
 Next up: **multi-device sync** you control (your own Supabase or self-hosted server). See [docs/ROADMAP.md](docs/ROADMAP.md) and the [sync + MCP design](docs/SYNC_AND_MCP.md).
 
+## Inspiration and credit
+
+Black Hole exists because of [NotchOwl](https://www.notchowl.com). Seeing what a notch app could be is what started this, and the idea of keeping a day's work in the notch rather than in a window is theirs.
+
+This is an independent implementation, not a copy. Every line here was written from scratch in Swift and SwiftUI; we have never had access to NotchOwl's source, and none of its code, assets or text is in this repository. The whole thing is readable above, so you can check that for yourself rather than take our word for it.
+
+We are not affiliated with NotchOwl and they have not endorsed this. If you want a polished, commercially supported notch app, go and buy theirs — it is good, and it is why this one exists.
+
+What is different here: Black Hole is free and open source under MIT, and it ships a Model Context Protocol server, so Claude, ChatGPT and Cursor can run your day. Those were the two things we wanted and could only get by building it.
+
 ## Contributing
 
 Issues and pull requests are welcome. Start with [CONTRIBUTING.md](CONTRIBUTING.md).

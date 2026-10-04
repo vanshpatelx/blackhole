@@ -4,7 +4,7 @@
 //   node scripts/mix.mjs   →   public/audio/mix.wav   (run audio.mjs and voice.mjs first)
 import { spawnSync } from "node:child_process";
 import { mkdirSync, readFileSync } from "node:fs";
-import { SR, biquad, buf, db, placeStereo, rand, readWavAt, readWavStereo, reseed, rmsDb, room, splitThree, writeWav, writeWavStereo } from "./lib/dsp.mjs";
+import { SR, biquad, buf, db, pan, placeStereo, rand, readWavAt, readWavStereo, reseed, rmsDb, room, splitThree, writeWav, writeWavStereo } from "./lib/dsp.mjs";
 import * as fx from "./sfx.mjs";
 
 const timing = JSON.parse(readFileSync(new URL("../src/film/timing.json", import.meta.url)));
@@ -31,8 +31,18 @@ const cues = [];
 const cue = (section, frame, sound, level = 1, p = 0) => cues.push({ t: at(section, frame), sound, level, p });
 const wordPan = (m) => Math.max(-0.5, Math.min(0.5, (m - 86) / 10));
 
-// The opening is spoken now, so the per-word notes that used to mark each word are gone from under
-// it: they sat in exactly the frequencies her words need. "here." lands after the line ends.
+// The opening: a hit on the very first frame, the clutter landing in key, a notification, a phone,
+// then the pull — air spiralling in, circling the room faster as it tightens, the floor dropping
+// away beneath it, and the hole snapping shut on the cut.
+cue("hook", 0, fx.impact, 0.55, 0);
+[[4, 77, 0.82], [11, 81, -0.24], [18, 84, 0.32], [26, 88, -0.4], [33, 89, 0.58], [41, 93, -0.88], [48, 96, 0.9]]
+  .forEach(([f, m, p]) => cue("hook", f, () => fx.pop(m), 0.3, p));
+cue("hook", 14, fx.ding, 0.3, 0.42);   // "Standup in 5 min", top right
+cue("hook", 24, fx.buzz, 0.32, -0.6);  // "3 unread messages", left
+cues.push({ t: at("hook", 64), sound: () => fx.swirl(1.5), level: 0.42, auto: (q) => Math.sin(2 * Math.PI * (1.5 + 4 * q) * q) * 0.75 * (1 - 0.6 * q) });
+cue("hook", 64, () => fx.sink(1.5), 0.5, 0);
+cue("hook", 103, fx.implode, 0.5, 0);
+// The words are spoken now, so no notes under them: they'd sit exactly where her voice needs room.
 cue("build", 0, () => fx.swish(0.5, 300, 1800), 0.16, 0);
 cue("build", 22, () => fx.swish(0.6, 400, 1600), 0.1, 0.4); // the hand enters from the right
 cue("build", 96, () => fx.word(89), 0.3, wordPan(89));
@@ -134,7 +144,17 @@ duckUnderVoice(musicL, musicR, (l) => l.duck);
 
 // ── Effects: placed and panned, in one stereo room, peaks held, out of the voice's way ──────────
 const sfxL = buf(LENGTH), sfxR = buf(LENGTH);
-for (const c of cues) placeStereo(sfxL, sfxR, c.sound(), c.t, c.level, c.p);
+for (const c of cues) {
+  if (!c.auto) { placeStereo(sfxL, sfxR, c.sound(), c.t, c.level, c.p); continue; }
+  // A sound that moves: its pan follows `auto` over the length of the sound.
+  const src = c.sound(), s0 = Math.floor(c.t * SR);
+  for (let i = 0; i < src.length; i++) {
+    const j = s0 + i;
+    if (j < 0 || j >= sfxL.length) continue;
+    const [gl, gr] = pan(c.auto(i / src.length));
+    sfxL[j] += src[i] * c.level * gl; sfxR[j] += src[i] * c.level * gr;
+  }
+}
 const wetL = room(sfxL, { size: 1.1, damp: 0.4, feedback: 0.76 }), wetR = room(sfxR, { size: 1.18, damp: 0.4, feedback: 0.76 });
 for (let i = 0; i < sfxL.length; i++) { sfxL[i] += wetL[i] * 0.22; sfxR[i] += wetR[i] * 0.22; }
 compressLinked(sfxL, sfxR, { threshold: -12, ratio: 4, attack: 0.001, release: 0.08 }); // hits stay punchy, never spiky

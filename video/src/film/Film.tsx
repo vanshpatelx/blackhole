@@ -7,6 +7,7 @@ import { Cursor } from "./Cursor";
 import { inkColor, paper, sans, serif } from "./fonts";
 import { Grain } from "./Grain";
 import { BEAT, factorOf, lengthOf, startOf, type Section } from "./grid";
+import { Hook } from "./Hook";
 import { Tempo } from "./tempo";
 import { Camera, MacScreen, SW } from "./Mac";
 import { CommandBar, Island, MeetingIsland, Panel } from "./Panel";
@@ -41,19 +42,7 @@ const ScreenLine: React.FC<{ words: { text: string; at: number; serif?: boolean 
   );
 };
 
-// ── 1 · Hook (bars 1–2) — the problem, word by word on the beat ──────────────────────────────
-const Hook: React.FC = () => {
-  const frame = useFilmFrame();
-  return (
-    <Paper>
-      {frame < 60 ? (
-        <Words words={[{ text: "You", at: 0 }, { text: "have", at: 8 }, { text: "a", at: 15 }, { text: "to-do list.", at: 22 }]} size={1.15} />
-      ) : (
-        <Words words={[{ text: "You", at: 60 }, { text: "never", at: 68 }, { text: "look", at: 75, serif: true }, { text: "at it.", at: 83 }]} size={1.15} />
-      )}
-    </Paper>
-  );
-};
+// ── 1 · Hook (bars 1–2) — src/film/Hook.tsx: the scattered day, and the notch pulling it in ──
 
 // ── 2 · Build (bars 3–4) — the screen, and a hand heading for the notch ──────────────────────
 const Build: React.FC = () => {

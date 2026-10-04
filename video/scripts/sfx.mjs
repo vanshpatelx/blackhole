@@ -170,3 +170,60 @@ export function air(seconds) {
 }
 
 export const level = db; // re-exported for the mixer's cue table
+
+// ── The opening: a scattered day, then the pull ───────────────────────────────────────────────
+
+/** The very first frame: a hit that says something has started. Low thump, bright crack, a tail. */
+export const impact = () => mixIn(
+  [sine(0.7, 110, 42, 5.5), 0, 1],
+  [burst(0.04, 2400, 0.9, 120), 0, 0.7],
+  [burst(0.5, 900, 0.6, 7), 0, 0.25]
+);
+
+/** Something landing on the pile: a soft pop pitched to the chord, so the clutter is still in key. */
+export const pop = (m) => mixIn([sine(0.14, midi(m) * 1.5, midi(m), 26, 0.001), 0, 0.7], [burst(0.012, 3000, 2, 500), 0, 0.3]);
+
+/** A notification: two quick tones, the second higher. */
+export const ding = () => mixIn([sine(0.35, midi(88), undefined, 11, 0.002), 0, 0.5], [sine(0.45, midi(93), undefined, 9, 0.002), 0.09, 0.55]);
+
+/** A phone buzzing against a desk. */
+export function buzz() {
+  const o = buf(0.42);
+  for (let i = 0; i < o.length; i++) {
+    const t = i / SR;
+    const on = Math.sin(2 * Math.PI * 7 * t) > -0.2 ? 1 : 0; // two short pulses
+    o[i] = (Math.sin(2 * Math.PI * 155 * t) * 0.8 + Math.sin(2 * Math.PI * 310 * t) * 0.25) * on * Math.sin((Math.PI * t) / 0.42);
+  }
+  return biquad(o, "highpass", 90);
+}
+
+/** Air spiralling into the hole: a rising, whirling sweep. The mixer swings it left and right. */
+export function swirl(seconds = 1.6) {
+  const o = buf(seconds);
+  let low = 0, band = 0;
+  for (let i = 0; i < o.length; i++) {
+    const p = i / o.length;
+    const whirl = 1 + 0.35 * Math.sin(2 * Math.PI * (3 + 9 * p) * (i / SR)); // speeding up as it tightens
+    const fc = (250 + 3200 * p * p) * whirl;
+    const f = 2 * Math.sin((Math.PI * Math.min(fc, 9000)) / SR);
+    const x = noise();
+    low += f * band; const high = x - low - 0.55 * band; band += f * high;
+    o[i] = band * Math.pow(p, 1.4) * 1.1;
+  }
+  return o;
+}
+
+/** A low tone falling away underneath the pull — the floor dropping out. */
+export const sink = (seconds = 1.6) => sine(seconds, 120, 34, 0.6, 0.25);
+
+/** The hole closing: everything sucked in at once, then cut. */
+export function implode() {
+  const o = buf(0.5);
+  for (let i = 0; i < o.length; i++) {
+    const t = i / SR, p = t / 0.5;
+    // A reversed swell: grows fast, then stops dead — the sound of something being taken away.
+    o[i] = noise() * Math.pow(p, 3) * (p < 0.96 ? 1 : (1 - p) / 0.04);
+  }
+  biquad(o, "bandpass", 1400, 0.6);
+  return mixIn([o, 0, 1], [sine(0.3, 70, 30, 12), 0.47, 1]);
+}

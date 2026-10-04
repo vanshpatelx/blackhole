@@ -3,15 +3,15 @@
   "lines": [
     {
       "file": "voice/line-0.wav",
-      "from": 3,
-      "frames": 66,
-      "duck": 0.857
+      "from": 2,
+      "frames": 38,
+      "duck": 0.689
     },
     {
       "file": "voice/line-1.wav",
       "from": 108,
-      "frames": 29,
-      "duck": 0.696
+      "frames": 38,
+      "duck": 0.567
     },
     {
       "file": "voice/line-2.wav",

@@ -2,6 +2,12 @@
   "model": "onnx-community/Kokoro-82M-v1.0-ONNX",
   "voice": "af_heart",
   "speed": 1.06,
+  "mix": {
+    "music": 0.74,
+    "voiceRms": -15,
+    "clearance": 14,
+    "minDuck": 0.07
+  },
   "lines": [
     {
       "section": "hook",

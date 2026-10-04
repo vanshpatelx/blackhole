@@ -9,6 +9,7 @@ import { Grain } from "./Grain";
 import { BEAT, cue, factorOf, lengthOf, startOf, type Section } from "./grid";
 import { Tempo } from "./tempo";
 import voiceover from "./voice-manifest.json";
+import voiceScript from "./voice.json";
 import { Camera, MacScreen, SW } from "./Mac";
 import { CommandBar, Island, MeetingIsland, Panel } from "./Panel";
 import { Words } from "./Type";
@@ -335,8 +336,9 @@ for (let f = 4; f < 44; f += 3) cues.push(["ask", f, "type", 0.3]);
 /** How far the music comes down while someone is speaking: easing in before a line, out after. */
 const duckUnderVoice = (f: number) => {
   let gain = 1;
-  for (const { from, frames } of voiceover.lines) {
-    const t = interpolate(f, [from - 5, from, from + frames, from + frames + 8], [1, 0.4, 0.4, 1], clamp);
+  // Each line carries the dip it needs, worked out by scripts/voice.mjs from the music under it.
+  for (const { from, frames, duck } of voiceover.lines) {
+    const t = interpolate(f, [from - 5, from, from + frames, from + frames + 8], [1, duck, duck, 1], clamp);
     gain = Math.min(gain, t);
   }
   return gain;
@@ -359,7 +361,7 @@ export const Film: React.FC = () => (
     ))}
     <Grain />
     {/* Headroom: effects land on top of the bed, so the bed sits below full scale. It dips under the voice. */}
-    <Audio src={staticFile("audio/music.wav")} volume={(f) => 0.74 * duckUnderVoice(f)} />
+    <Audio src={staticFile("audio/music.wav")} volume={(f) => voiceScript.mix.music * duckUnderVoice(f)} />
     {voiceover.lines.map((line) => (
       <Sequence key={line.file} from={line.from}>
         <Audio src={staticFile(line.file)} volume={1} />

@@ -18,6 +18,21 @@ let total = 0;
 for (const s of timing.sections) { starts[s.name] = { from: total, to: total + s.bars * BAR, factor: (timing.baseBeat / timing.beat) * s.speed }; total += s.bars * BAR; }
 const frameOf = (section, at) => starts[section].from + Math.round(at / starts[section].factor);
 
+// The music bed, to work out how far it has to come down under each line.
+const music = (() => {
+  const b = readFileSync(new URL("../public/audio/music.wav", import.meta.url));
+  const n = (b.length - 44) / 2;
+  const d = new Float32Array(n);
+  for (let i = 0; i < n; i++) d[i] = b.readInt16LE(44 + i * 2) / 32768;
+  return { sr: b.readUInt32LE(24), d };
+})();
+const rmsDb = (d, a = 0, z = d.length) => {
+  let s = 0;
+  for (let i = a; i < z; i++) s += d[i] * d[i];
+  return 20 * Math.log10(Math.sqrt(s / Math.max(1, z - a)) + 1e-9);
+};
+const { mix } = script;
+
 const tts = await KokoroTTS.from_pretrained(script.model, { dtype: "q8", device: "cpu" });
 mkdirSync("public/voice", { recursive: true });
 
@@ -31,15 +46,26 @@ for (const [i, line] of script.lines.entries()) {
   while (first < raw.length && Math.abs(raw[first]) < 0.01) first++;
   while (last > first && Math.abs(raw[last]) < 0.01) last--;
   audio.audio = raw.slice(Math.max(0, first - pad), Math.min(raw.length, last + pad));
-  // Even out the level between lines, so none of them jumps out of the mix.
+  // Even out how loud the lines *sound*, not their peaks: peak-matching left some lines several dB
+  // quieter than others. A ceiling keeps the loudest moments from clipping.
   const data = audio.audio;
   let peak = 0;
   for (const v of data) peak = Math.max(peak, Math.abs(v));
-  if (peak > 0) for (let k = 0; k < data.length; k++) data[k] *= 0.9 / peak;
+  const gain = Math.min(Math.pow(10, (mix.voiceRms - rmsDb(data)) / 20), 0.97 / Math.max(peak, 1e-6));
+  for (let k = 0; k < data.length; k++) data[k] *= gain;
   const file = `voice/line-${i}.wav`;
   await audio.save(`public/${file}`);
   const seconds = data.length / audio.sampling_rate;
-  lines.push({ file, text: line.text, section: line.section, from: frameOf(line.section, line.at), frames: Math.ceil(seconds * timing.fps), seconds });
+  const from = frameOf(line.section, line.at);
+  // Bring the music down exactly as far as this line needs: hardly at all in the quiet opening,
+  // a long way under the full groove.
+  const a = Math.floor((from / timing.fps) * music.sr);
+  const z = Math.min(music.d.length, a + Math.floor(seconds * music.sr));
+  const bed = rmsDb(music.d, a, z) + 20 * Math.log10(mix.music);
+  const needed = Math.pow(10, (rmsDb(data) - mix.clearance - bed) / 20);
+  const duck = Math.max(mix.minDuck, Math.min(1, needed));
+  const clear = rmsDb(data) - (bed + 20 * Math.log10(duck));
+  lines.push({ file, text: line.text, section: line.section, from, frames: Math.ceil(seconds * timing.fps), seconds, duck, clear });
 }
 
 // Check the cut, not just the files.
@@ -54,7 +80,8 @@ for (const [i, l] of lines.entries()) {
   const section = starts[l.section];
   if (end > section.to + 8) issues.push(`spills ${end - section.to} frames past its section`);
   problems += issues.length;
-  console.log(`${(l.from / timing.fps).toFixed(2).padStart(6)}s → ${(end / timing.fps).toFixed(2).padStart(6)}s  ${l.seconds.toFixed(2)}s  ${l.text}${issues.length ? "   ⚠ " + issues.join("; ") : ""}`);
+  if (l.clear < mix.clearance - 0.5) issues.push(`only ${l.clear.toFixed(1)} dB over the music`);
+  console.log(`${(l.from / timing.fps).toFixed(2).padStart(6)}s → ${(end / timing.fps).toFixed(2).padStart(6)}s  ${l.seconds.toFixed(2)}s  music ×${l.duck.toFixed(2)}  voice +${l.clear.toFixed(1)} dB  ${l.text}${issues.length ? "   ⚠ " + issues.join("; ") : ""}`);
 }
-writeFileSync(new URL("../src/film/voice-manifest.json", import.meta.url), JSON.stringify({ voice, lines: lines.map(({ file, from, frames }) => ({ file, from, frames })) }, null, 2) + "\n");
+writeFileSync(new URL("../src/film/voice-manifest.json", import.meta.url), JSON.stringify({ voice, lines: lines.map(({ file, from, frames, duck }) => ({ file, from, frames, duck: Number(duck.toFixed(3)) })) }, null, 2) + "\n");
 console.log(problems ? `\n${problems} timing problem(s)` : "\nevery line fits its moment");

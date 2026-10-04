@@ -3,14 +3,16 @@
   "private": true,
   "description": "Launch video for Black Hole, built with Remotion.",
   "scripts": {
-    "studio": "remotion studio",
-    "render": "remotion render Launch out/blackhole-launch-16x9.mp4",
-    "render:square": "remotion render LaunchSquare out/blackhole-launch-1x1.mp4",
-    "render:vertical": "remotion render LaunchVertical out/blackhole-launch-4x5.mp4",
+    "audio": "node scripts/audio.mjs",
+    "studio": "npm run audio && remotion studio",
+    "render": "npm run audio && remotion render Launch out/blackhole-launch-16x9.mp4",
+    "render:square": "npm run audio && remotion render LaunchSquare out/blackhole-launch-1x1.mp4",
+    "render:vertical": "npm run audio && remotion render LaunchVertical out/blackhole-launch-4x5.mp4",
     "render:all": "npm run render && npm run render:square && npm run render:vertical"
   },
   "dependencies": {
     "@remotion/cli": "^4.0.532",
+    "@remotion/google-fonts": "^4.0.532",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "remotion": "^4.0.532"

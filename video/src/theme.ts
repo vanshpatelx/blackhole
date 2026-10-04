@@ -20,7 +20,8 @@ export const palette = {
 export const space =
   "radial-gradient(120% 90% at 50% 0%, #2A2340 0%, #181A2A 45%, #0E1018 100%)";
 
-export const font =
-  '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", "Helvetica Neue", sans-serif';
+// The film sets everything in Inter, loaded from Google Fonts, rather than whatever the render
+// machine happens to have.
+export { sans as font } from "./film/fonts";
 
 export const FPS = 30;

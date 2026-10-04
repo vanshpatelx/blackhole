@@ -2,7 +2,7 @@ import React from "react";
 import { Composition } from "remotion";
 import { Film } from "./film/Film";
 import { FILM_FRAMES } from "./film/grid";
-import { FPS } from "./theme";
+import { FPS } from "./film/grid";
 
 export const Root: React.FC = () => (
   <>

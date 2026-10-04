@@ -1,5 +1,6 @@
 import React from "react";
-import { interpolate, useCurrentFrame } from "remotion";
+import { useFilmFrame } from "./tempo";
+import {interpolate} from "remotion";
 
 export type Waypoint = { frame: number; x: number; y: number; click?: boolean };
 
@@ -10,7 +11,7 @@ const easeInOut = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t 
  * that it corrects, a little drift while it rests, and a press that visibly squashes.
  */
 export const Cursor: React.FC<{ path: Waypoint[]; scale?: number }> = ({ path, scale = 1 }) => {
-  const frame = useCurrentFrame();
+  const frame = useFilmFrame();
   if (path.length === 0 || frame < path[0].frame - 1) return null;
 
   let x = path[path.length - 1].x;

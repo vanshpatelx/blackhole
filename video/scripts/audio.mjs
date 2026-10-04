@@ -4,13 +4,20 @@
 //   node scripts/audio.mjs   →   public/audio/*.wav
 //
 // 120 BPM, so a beat is 0.5s (15 frames at 30fps) and a bar is 2s. The film cuts on these.
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 
+// Tempo and arrangement come from the same file the film is cut from, so the two can't drift.
+const timing = JSON.parse(readFileSync(new URL("../src/film/timing.json", import.meta.url)));
 const SR = 44100;
-const BPM = 120;
-const BEAT = 60 / BPM;
+const BEAT = timing.beat / timing.fps; // seconds
+const BPM = 60 / BEAT;
 const BAR = BEAT * 4;
-const BARS = 16;
+const barStart = {};
+let BARS = 0;
+for (const { name, bars } of timing.sections) { barStart[name] = BARS; BARS += bars; }
+const DROP = barStart.workday; // the notch opens on this bar
+const PEAK = [barStart.montage, barStart.end]; // [from, to)
+const OUTRO = barStart.end;
 const LENGTH = BAR * BARS + 1.5; // a little tail for the last chord to ring
 
 // A seeded generator, so every render produces the identical file and diffs stay meaningful.
@@ -177,9 +184,10 @@ const kicks = [];
 for (let bar = 0; bar < BARS; bar++) {
   const t0 = bar * BAR;
   const c = chords[bar % 4];
-  const hook = bar < 2, build = bar < 4, groove = bar >= 4 && bar < 14, peak = bar >= 12 && bar < 14, outro = bar >= 14;
+  const hook = bar < barStart.build, build = bar < DROP, groove = bar >= DROP && bar < OUTRO;
+  const peak = bar >= PEAK[0] && bar < PEAK[1], outro = bar >= OUTRO;
 
-  if (bar < 15) pad(music, t0, BAR, c.pad, hook ? 0.009 : build ? 0.008 : 0.014);
+  if (bar < OUTRO + 1) pad(music, t0, BAR, c.pad, hook ? 0.009 : build ? 0.008 : 0.014);
 
   // The motif: sparse under the opening words so they land clean, full once the notch opens.
   for (let step = 0; step < 8; step++) {
@@ -208,13 +216,13 @@ for (let bar = 0; bar < BARS; bar++) {
   }
 }
 
-// The lift into the drop, and the drop itself on bar 5 when the notch opens.
-riser(drums, 2 * BAR + BEAT, BAR + BEAT * 3, 0.2);
-const dropAt = 4 * BAR;
+// The lift into the drop, across the build.
+riser(drums, barStart.build * BAR, (DROP - barStart.build) * BAR - BEAT / 2, 0.2);
+const dropAt = DROP * BAR;
 
 // A final chord that rings out under the end card.
-pad(music, 14 * BAR, BAR * 2 - 0.4, [53, 57, 60, 64, 67, 72], 0.010);
-for (const [i, m] of [65, 69, 72, 76, 79, 84].entries()) pluck(melodic, 14 * BAR + i * 0.06, midi(m), 0.32, 3);
+pad(music, OUTRO * BAR, BAR * (BARS - OUTRO) - 0.4, [53, 57, 60, 64, 67, 72], 0.010);
+for (const [i, m] of [65, 69, 72, 76, 79, 84].entries()) pluck(melodic, OUTRO * BAR + i * 0.06, midi(m), 0.32, 3);
 
 // Sidechain: everything melodic ducks under each kick, which is what makes it breathe.
 const duck = new Float32Array(music.length).fill(1);
@@ -230,7 +238,7 @@ for (let i = 0; i < mix.length; i++) mix[i] = (music[i] + wet[i] * 0.9) * duck[i
 // Half a beat of silence before the drop, so the notch opens out of nothing. The drop kick is
 // written after this, so it still hits.
 {
-  const gapStart = Math.floor((4 * BAR - BEAT / 2) * SR), gapEnd = Math.floor(4 * BAR * SR), ramp = Math.floor(0.03 * SR);
+  const gapStart = Math.floor((DROP * BAR - BEAT / 2) * SR), gapEnd = Math.floor(DROP * BAR * SR), ramp = Math.floor(0.03 * SR);
   for (let i = gapStart; i < gapEnd; i++) mix[i] *= i < gapStart + ramp ? 1 - (i - gapStart) / ramp : 0;
 }
 kick(mix, dropAt, 1.25);
@@ -238,7 +246,7 @@ for (let i = 0; i < 0.9 * SR; i++) mix[Math.floor(dropAt * SR) + i] += noise() *
 
 // Automation: the montage is the energy peak, so it sits about 3 dB above the groove.
 {
-  const a = Math.floor(12 * BAR * SR), z = Math.floor(14 * BAR * SR), ramp = Math.floor(0.25 * SR);
+  const a = Math.floor(PEAK[0] * BAR * SR), z = Math.floor(PEAK[1] * BAR * SR), ramp = Math.floor(0.25 * SR);
   for (let i = a; i < z + ramp && i < mix.length; i++) {
     const up = i < a + ramp ? (i - a) / ramp : i < z ? 1 : 1 - (i - z) / ramp;
     mix[i] *= 1 + 0.42 * up;
@@ -273,4 +281,4 @@ const sfx = {
 mkdirSync("public/audio", { recursive: true });
 writeWav("public/audio/music.wav", normalize(mix, 0.89));
 for (const [name, make] of Object.entries(sfx)) writeWav(`public/audio/${name}.wav`, normalize(make(), 0.8));
-console.log(`music ${LENGTH.toFixed(1)}s at ${BPM} BPM, plus ${Object.keys(sfx).length} effects`);
+console.log(`music ${LENGTH.toFixed(1)}s, ${BARS} bars at ${BPM.toFixed(2)} BPM (drop on bar ${DROP + 1}), plus ${Object.keys(sfx).length} effects`);

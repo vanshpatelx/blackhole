@@ -1,11 +1,13 @@
 import React from "react";
-import { AbsoluteFill, Audio, Img, Sequence, interpolate, spring, staticFile, useCurrentFrame, useVideoConfig } from "remotion";
+import { useFilmFrame } from "./tempo";
+import {AbsoluteFill, Audio, Img, Sequence, interpolate, spring, staticFile, useVideoConfig} from "remotion";
 import { Card, Holey, TaskRow } from "../ui";
 import { palette } from "../theme";
 import { Cursor } from "./Cursor";
 import { inkColor, paper, sans, serif } from "./fonts";
 import { Grain } from "./Grain";
-import { at, BEAT, FILM_FRAMES } from "./grid";
+import { BEAT, cue, factorOf, lengthOf, startOf, type Section } from "./grid";
+import { Tempo } from "./tempo";
 import { Camera, MacScreen, SW } from "./Mac";
 import { CommandBar, Island, MeetingIsland, Panel } from "./Panel";
 import { Words } from "./Type";
@@ -24,7 +26,7 @@ const Paper: React.FC<{ children?: React.ReactNode }> = ({ children }) => (
 
 /** A line set inside the screen, so it scales and crops with the camera like everything else on it. */
 const ScreenLine: React.FC<{ words: { text: string; at: number; serif?: boolean }[]; top: number; px: number }> = ({ words, top, px }) => {
-  const frame = useCurrentFrame();
+  const frame = useFilmFrame();
   return (
     <div style={{ position: "absolute", left: SW / 2 - 560, width: 1120, top, textAlign: "center", fontFamily: sans, fontSize: px, fontWeight: 600, letterSpacing: "-0.035em", color: inkColor, lineHeight: 1.08 }}>
       {words.map((w, i) => {
@@ -41,7 +43,7 @@ const ScreenLine: React.FC<{ words: { text: string; at: number; serif?: boolean 
 
 // ── 1 · Hook (bars 1–2) — the problem, word by word on the beat ──────────────────────────────
 const Hook: React.FC = () => {
-  const frame = useCurrentFrame();
+  const frame = useFilmFrame();
   return (
     <Paper>
       {frame < 60 ? (
@@ -55,7 +57,7 @@ const Hook: React.FC = () => {
 
 // ── 2 · Build (bars 3–4) — the screen, and a hand heading for the notch ──────────────────────
 const Build: React.FC = () => {
-  const frame = useCurrentFrame();
+  const frame = useFilmFrame();
   const zoom = interpolate(frame, [0, 120], [1, 1.1], clamp);
   return (
     <Paper>
@@ -63,11 +65,8 @@ const Build: React.FC = () => {
         <MacScreen>
           <ScreenLine
             top={470}
-            px={66}
-            words={[
-              { text: "So", at: 6 }, { text: "we", at: 12 }, { text: "put", at: 18 }, { text: "it", at: 24 },
-              { text: "where", at: 36 }, { text: "you", at: 42 }, { text: "already", at: 48 }, { text: "look.", at: 56, serif: true }
-            ]}
+            px={74}
+            words={[{ text: "So", at: 18 }, { text: "we", at: 30 }, { text: "put", at: 42 }, { text: "it", at: 54 }, { text: "here.", at: 96, serif: true }]}
           />
           <Cursor path={[{ frame: 22, x: 1370, y: 900 }, { frame: 70, x: 1010, y: 520 }, { frame: 114, x: SW / 2 + 6, y: 16 }]} scale={1.15} />
         </MacScreen>
@@ -78,7 +77,7 @@ const Build: React.FC = () => {
 
 // ── 3–5 · Drop, tick, start (bars 5–7) — one continuous take on the screen ───────────────────
 const Workday: React.FC = () => {
-  const frame = useCurrentFrame();
+  const frame = useFilmFrame();
   const { fps } = useVideoConfig();
   const open = spring({ frame, fps, config: { damping: 15, stiffness: 120, mass: 0.9 } });
   const collapse = spring({ frame: frame - 165, fps, config: { damping: 200, stiffness: 180 } });
@@ -118,7 +117,7 @@ const Workday: React.FC = () => {
 
 // ── 6 · The notch keeps time (bar 8) ─────────────────────────────────────────────────────────
 const Keeps: React.FC = () => {
-  const frame = useCurrentFrame();
+  const frame = useFilmFrame();
   const { fps } = useVideoConfig();
   const push = spring({ frame, fps, config: { damping: 26, mass: 1 } });
   const seconds = 1499 - frame * 1.9;
@@ -137,7 +136,7 @@ const Keeps: React.FC = () => {
 
 // ── 7 · Or skip the mouse (bars 9–10) ────────────────────────────────────────────────────────
 const Key: React.FC<{ label: string; pressAt: number; wide?: boolean; showAt: number }> = ({ label, pressAt, wide, showAt }) => {
-  const frame = useCurrentFrame();
+  const frame = useFilmFrame();
   const { width, height } = useVideoConfig();
   const k = Math.min(width, height * 1.6) / 1100;
   const pressed = frame >= pressAt && frame < pressAt + 9;
@@ -168,7 +167,7 @@ const Key: React.FC<{ label: string; pressAt: number; wide?: boolean; showAt: nu
 };
 
 const Command: React.FC = () => {
-  const frame = useCurrentFrame();
+  const frame = useFilmFrame();
   const { fps, height } = useVideoConfig();
   // Hooks before any early return: React needs the same ones every frame.
   const z = useZoom();
@@ -199,7 +198,7 @@ const Command: React.FC = () => {
 
 // ── 8 · Or ask your assistant (bars 11–12) ───────────────────────────────────────────────────
 const Ask: React.FC = () => {
-  const frame = useCurrentFrame();
+  const frame = useFilmFrame();
   const { width, height } = useVideoConfig();
   const z = useZoom();
   if (frame < 60) {
@@ -238,7 +237,7 @@ const Ask: React.FC = () => {
 // ── 9 · Montage (bars 13–14): a cut on every beat ────────────────────────────────────────────
 const Label: React.FC<{ text: string }> = ({ text }) => {
   const { height, width } = useVideoConfig();
-  const frame = useCurrentFrame();
+  const frame = useFilmFrame();
   const t = interpolate(frame, [1, 6], [0, 1], clamp);
   return (
     <div style={{ position: "absolute", left: 0, right: 0, top: height * 0.85, transform: "translateY(-50%)", textAlign: "center", fontFamily: serif, fontStyle: "italic", fontSize: Math.min(width * 0.06, height * 0.1), color: inkColor, opacity: t, letterSpacing: "-0.01em" }}>
@@ -250,7 +249,7 @@ const Label: React.FC<{ text: string }> = ({ text }) => {
 /** Pops a UI element in, scaled so its height is `fill` of the frame — clear of the label below it. */
 const Pop: React.FC<{ children: React.ReactNode; h: number; fill?: number; y?: number }> = ({ children, h, fill = 0.56, y = 0.41 }) => {
   const { width, height } = useVideoConfig();
-  const frame = useCurrentFrame();
+  const frame = useFilmFrame();
   const p = interpolate(frame, [0, 5], [0.93, 1], { ...clamp, easing: (t) => 1 - Math.pow(1 - t, 3) });
   return (
     <div style={{ position: "absolute", left: width / 2, top: height * y, transform: `translate(-50%, -50%) scale(${Math.min((height * fill) / h, (width * 0.84) / (h * 1.8)) * p})` }}>{children}</div>
@@ -296,7 +295,7 @@ const Orb: React.FC = () => (
 
 // ── 10 · End card (bars 15–16) ───────────────────────────────────────────────────────────────
 const End: React.FC = () => {
-  const frame = useCurrentFrame();
+  const frame = useFilmFrame();
   const { fps, width, height } = useVideoConfig();
   const u = Math.min(width * 0.05, height * 0.085);
   const logo = spring({ frame, fps, config: { damping: 13, mass: 0.8 } });
@@ -316,43 +315,42 @@ const End: React.FC = () => {
 };
 
 // ── Sound ────────────────────────────────────────────────────────────────────────────────────
-const sfx: Array<[number, string, number]> = [
-  // Hook words.
-  [0, "tick", 0.5], [8, "tick", 0.45], [15, "tick", 0.45], [22, "tick", 0.55],
-  [60, "tick", 0.5], [68, "tick", 0.45], [75, "tick", 0.55], [83, "tick", 0.5],
-  // The notch opening, leading into the drop.
-  [at(4, 3) + 6, "whoosh", 0.55],
-  // Ticking the task, starting the timer, the collapse into the island.
-  [at(6, 2), "click", 0.7], [at(7, 2), "click", 0.7], [at(7, 3), "pop", 0.6],
-  // Keys.
-  [at(9, 2), "key", 0.8], [at(9, 3), "key", 0.8],
-  // Sending to the assistant, then each task landing.
-  [at(11, 3) + 5, "click", 0.6], [at(12, 0) + 2, "tick", 0.5], [at(12, 0) + 15, "tick", 0.5], [at(12, 0) + 28, "tick", 0.5],
-  // Pill appearing under the typed command.
-  [at(10, 3) - 1, "tick", 0.45],
-  // End.
-  [at(15, 0), "chime", 0.5]
+// Each cue is written against its section's original timing and placed by the same grid as the
+// pictures, so retiming a section moves its sounds with it.
+const cues: Array<[Section, number, string, number]> = [
+  ["hook", 0, "tick", 0.5], ["hook", 8, "tick", 0.45], ["hook", 15, "tick", 0.45], ["hook", 22, "tick", 0.55],
+  ["hook", 60, "tick", 0.5], ["hook", 68, "tick", 0.45], ["hook", 75, "tick", 0.55], ["hook", 83, "tick", 0.5],
+  // "here." and the notch opening, leading into the drop.
+  ["build", 96, "tick", 0.5], ["build", 104, "whoosh", 0.55],
+  // Ticking the task, starting the timer, collapsing into the island.
+  ["workday", 90, "click", 0.7], ["workday", 150, "click", 0.7], ["workday", 165, "pop", 0.6],
+  ["command", 30, "key", 0.8], ["command", 45, "key", 0.8], ["command", 104, "tick", 0.45],
+  ["ask", 50, "click", 0.6], ["ask", 62, "tick", 0.5], ["ask", 75, "tick", 0.5], ["ask", 88, "tick", 0.5],
+  ["end", 0, "chime", 0.5]
 ];
-// Keystrokes while typing the command and the message.
-for (let f = at(10, 0) + 4; f < at(10, 0) + 40; f += 3) sfx.push([f, "type", 0.32]);
-for (let f = at(11, 0) + 4; f < at(11, 0) + 44; f += 3) sfx.push([f, "type", 0.3]);
+for (let f = 64; f < 100; f += 3) cues.push(["command", f, "type", 0.32]);
+for (let f = 4; f < 44; f += 3) cues.push(["ask", f, "type", 0.3]);
+
+const scenes: Array<[Section, React.FC]> = [
+  ["hook", Hook], ["build", Build], ["workday", Workday], ["keeps", Keeps],
+  ["command", Command], ["ask", Ask], ["montage", Montage], ["end", End]
+];
 
 // ── The film ─────────────────────────────────────────────────────────────────────────────────
 export const Film: React.FC = () => (
   <AbsoluteFill style={{ background: paper }}>
-    <Sequence from={at(1)} durationInFrames={at(3) - at(1)}><Hook /></Sequence>
-    <Sequence from={at(3)} durationInFrames={at(5) - at(3)}><Build /></Sequence>
-    <Sequence from={at(5)} durationInFrames={at(8) - at(5)}><Workday /></Sequence>
-    <Sequence from={at(8)} durationInFrames={at(9) - at(8)}><Keeps /></Sequence>
-    <Sequence from={at(9)} durationInFrames={at(11) - at(9)}><Command /></Sequence>
-    <Sequence from={at(11)} durationInFrames={at(13) - at(11)}><Ask /></Sequence>
-    <Sequence from={at(13)} durationInFrames={at(15) - at(13)}><Montage /></Sequence>
-    <Sequence from={at(15)} durationInFrames={FILM_FRAMES - at(15)}><End /></Sequence>
+    {scenes.map(([name, Scene]) => (
+      <Sequence key={name} from={startOf(name)} durationInFrames={lengthOf(name)}>
+        <Tempo factor={factorOf(name)}>
+          <Scene />
+        </Tempo>
+      </Sequence>
+    ))}
     <Grain />
     {/* Headroom: effects land on top of the bed, so the bed sits below full scale. */}
     <Audio src={staticFile("audio/music.wav")} volume={0.74} />
-    {sfx.map(([f, name, vol], i) => (
-      <Sequence key={i} from={f}>
+    {cues.map(([section, original, name, vol], i) => (
+      <Sequence key={i} from={cue(section, original)}>
         <Audio src={staticFile(`audio/${name}.wav`)} volume={vol} />
       </Sequence>
     ))}

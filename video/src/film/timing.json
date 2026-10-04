@@ -1,0 +1,15 @@
+{
+  "fps": 30,
+  "beat": 13,
+  "baseBeat": 15,
+  "sections": [
+    { "name": "hook", "bars": 2, "speed": 1 },
+    { "name": "build", "bars": 1, "speed": 2 },
+    { "name": "workday", "bars": 2, "speed": 1.5 },
+    { "name": "keeps", "bars": 1, "speed": 1 },
+    { "name": "command", "bars": 2, "speed": 1 },
+    { "name": "ask", "bars": 2, "speed": 1 },
+    { "name": "montage", "bars": 2, "speed": 1 },
+    { "name": "end", "bars": 2, "speed": 1 }
+  ]
+}

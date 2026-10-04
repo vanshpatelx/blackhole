@@ -1,6 +1,6 @@
 # Launch film
 
-A 32-second launch film for Black Hole, built with [Remotion](https://www.remotion.dev), with an
+A 24-second launch film for Black Hole, built with [Remotion](https://www.remotion.dev), with an
 original soundtrack synthesized from scratch.
 
 ```bash
@@ -18,8 +18,13 @@ npm run render:all    # writes out/blackhole-launch-{16x9,1x1,4x5}.mp4
 
 ## How it's built
 
-**Cut to the music.** The soundtrack is 120 BPM, so a beat is 15 frames and a bar is 60.
-`src/film/grid.ts` holds that grid, and every cut, word and sound effect lands on it.
+**Cut to the music.** The soundtrack is 138 BPM, so a beat is exactly 13 frames and a bar is 52.
+Tempo and the section layout live in `src/film/timing.json`, which both the film and the
+soundtrack generator read, so pictures and music cannot drift apart.
+
+**Faster or slower is a one-line change.** Each section has a bar count and a `speed`. Raising a
+section's speed plays its animations faster without re-timing any of them, and its sound cues move
+with it. Changing `beat` re-times the whole film and re-arranges the music to match.
 
 **The soundtrack is generated, not licensed.** `scripts/audio.mjs` composes and synthesizes the
 music and every sound effect — plucked strings, pads, drums, a riser into the drop — with no
@@ -40,14 +45,13 @@ most; a pointer that moves along a curve, overshoots and settles; hard cuts on t
 | Bars | Section |
 |---|---|
 | 1–2 | "You have a to-do list. / You never *look* at it." |
-| 3–4 | The screen, and a hand heading for the notch |
-| 5 | The drop: the workspace opens out of the notch |
-| 6–7 | A task ticked off; the timer started; the notch becomes the island |
-| 8 | Close on the island: "The notch keeps *time*." |
-| 9–10 | ⌥ Space, and a sentence becoming a task |
-| 11–12 | An assistant adding three tasks over MCP |
-| 13–14 | A cut on every beat: meetings, music, insights, repeats, notes, any screen, Holey |
-| 15–16 | Black Hole — *Your whole day, one hover away.* |
+| 3 | The screen, a hand heading for the notch: "So we put it *here*." |
+| 4–5 | The drop: the workspace opens out of the notch; a task ticked, the timer started |
+| 6 | Close on the island: "The notch keeps *time*." |
+| 7–8 | ⌥ Space, and a sentence becoming a task |
+| 9–10 | An assistant adding three tasks over MCP |
+| 11–12 | A cut on every beat: meetings, music, insights, repeats, notes, any screen, Holey |
+| 13–14 | Black Hole — *Your whole day, one hover away.* |
 
 ## Licence
 

@@ -1,5 +1,6 @@
 import React from "react";
-import { interpolate, useCurrentFrame, useVideoConfig } from "remotion";
+import { useFilmFrame } from "./tempo";
+import {interpolate, useVideoConfig} from "remotion";
 import { inkColor, sans, serif } from "./fonts";
 
 export type Word = { text: string; at: number; serif?: boolean };
@@ -15,7 +16,7 @@ export const Words: React.FC<{
   color?: string;
   out?: number;
 }> = ({ words, size = 1, y = 0.5, color = inkColor, out }) => {
-  const frame = useCurrentFrame();
+  const frame = useFilmFrame();
   const { width, height } = useVideoConfig();
   const px = Math.min(width * 0.058, height * 0.1) * size;
   const leave = out === undefined ? 1 : interpolate(frame, [out, out + 6], [1, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });

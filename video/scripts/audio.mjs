@@ -8,7 +8,8 @@ import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 
 // Tempo and arrangement come from the same file the film is cut from, so the two can't drift.
 const timing = JSON.parse(readFileSync(new URL("../src/film/timing.json", import.meta.url)));
-const SR = 44100;
+// 48 kHz, the rate the video carries, so the mix never has to resample the music.
+const SR = 48000;
 const BEAT = timing.beat / timing.fps; // seconds
 const BPM = 60 / BEAT;
 const BAR = BEAT * 4;
@@ -266,19 +267,8 @@ for (let i = 0; i < mix.length; i++) {
   if (i > fadeStart) mix[i] *= 1 - (i - fadeStart) / (mix.length - fadeStart);
 }
 
-// --- Sound effects ---------------------------------------------------------------------------
-
-const sfx = {
-  tick() { const o = buf(0.06); for (let i = 0; i < o.length; i++) { const t = i / SR; o[i] = (Math.sin(2 * Math.PI * 2100 * t) * 0.6 + noise() * 0.2) * Math.exp(-t * 90); } return o; },
-  click() { const o = buf(0.04); let lp = 0; for (let i = 0; i < o.length; i++) { const x = noise(); lp += 0.5 * (x - lp); o[i] = ((x - lp) + Math.sin(2 * Math.PI * 3400 * i / SR) * 0.4) * Math.exp(-(i / SR) * 160); } return o; },
-  whoosh() { const o = buf(0.75); let low = 0, band = 0; for (let i = 0; i < o.length; i++) { const p = i / o.length; const fc = 350 + 3800 * Math.sin(p * Math.PI * 0.5); const f = 2 * Math.sin(Math.PI * fc / SR); const x = noise(); low += f * band; const high = x - low - 0.5 * band; band += f * high; o[i] = band * Math.sin(p * Math.PI) * 0.9; } return o; },
-  pop() { const o = buf(0.14); let ph = 0; for (let i = 0; i < o.length; i++) { const t = i / SR; ph += 2 * Math.PI * (330 + 600 * Math.exp(-t * 40)) / SR; o[i] = Math.sin(ph) * Math.exp(-t * 26); } return o; },
-  key() { const o = buf(0.1); let lp = 0; for (let i = 0; i < o.length; i++) { const t = i / SR; const x = noise(); lp += 0.2 * (x - lp); o[i] = (Math.sin(2 * Math.PI * 170 * t) * 0.7 + lp * 0.8) * Math.exp(-t * 38); } return o; },
-  type() { const o = buf(0.03); let lp = 0; for (let i = 0; i < o.length; i++) { const x = noise(); lp += 0.45 * (x - lp); o[i] = (x - lp) * Math.exp(-(i / SR) * 220); } return o; },
-  chime() { const o = buf(2.2); for (let i = 0; i < o.length; i++) { const t = i / SR; let v = 0; for (const [r, a, d] of [[1, 1, 2.2], [2.76, 0.5, 3.4], [5.4, 0.25, 5], [8.93, 0.12, 7]]) v += Math.sin(2 * Math.PI * 1046.5 * r * t) * a * Math.exp(-t * d); o[i] = v * Math.min(1, i / 60); } return o; }
-};
+// Sound effects live in scripts/sfx.mjs and are placed by scripts/mix.mjs.
 
 mkdirSync("public/audio", { recursive: true });
 writeWav("public/audio/music.wav", normalize(mix, 0.89));
-for (const [name, make] of Object.entries(sfx)) writeWav(`public/audio/${name}.wav`, normalize(make(), 0.8));
-console.log(`music ${LENGTH.toFixed(1)}s, ${BARS} bars at ${BPM.toFixed(2)} BPM (drop on bar ${DROP + 1}), plus ${Object.keys(sfx).length} effects`);
+console.log(`music ${LENGTH.toFixed(1)}s, ${BARS} bars at ${BPM.toFixed(2)} BPM (drop on bar ${DROP + 1})`);

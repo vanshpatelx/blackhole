@@ -4,12 +4,14 @@
   "description": "Launch video for Black Hole, built with Remotion.",
   "scripts": {
     "audio": "node scripts/audio.mjs",
-    "studio": "npm run audio && npm run voice && remotion studio",
-    "render": "npm run audio && npm run voice && remotion render Launch out/blackhole-launch-16x9.mp4",
-    "render:square": "npm run audio && npm run voice && remotion render LaunchSquare out/blackhole-launch-1x1.mp4",
-    "render:vertical": "npm run audio && npm run voice && remotion render LaunchVertical out/blackhole-launch-4x5.mp4",
+    "studio": "npm run sound && remotion studio",
+    "render": "npm run sound && remotion render Launch out/blackhole-launch-16x9.mp4",
+    "render:square": "npm run sound && remotion render LaunchSquare out/blackhole-launch-1x1.mp4",
+    "render:vertical": "npm run sound && remotion render LaunchVertical out/blackhole-launch-4x5.mp4",
     "render:all": "npm run render && npm run render:square && npm run render:vertical",
-    "voice": "node scripts/voice.mjs"
+    "voice": "node scripts/voice.mjs",
+    "mix": "node scripts/mix.mjs",
+    "sound": "npm run audio && npm run voice && npm run mix"
   },
   "dependencies": {
     "@remotion/cli": "^4.0.532",

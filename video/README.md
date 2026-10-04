@@ -26,6 +26,20 @@ soundtrack generator read, so pictures and music cannot drift apart.
 section's speed plays its animations faster without re-timing any of them, and its sound cues move
 with it. Changing `beat` re-times the whole film and re-arranges the music to match.
 
+**Sound is mixed and mastered offline.** `npm run sound` builds it in three steps: `audio.mjs`
+composes the music, `voice.mjs` speaks the voiceover, and `mix.mjs` places everything on the beat
+grid and masters it to -14 LUFS — the level X, LinkedIn and YouTube normalise towards — into the
+single track the film plays. The mixer reports, per line, how far the voice sits above everything
+else (music, effects and room tone together); every line clears it by at least 12 dB.
+
+`scripts/sfx.mjs` designs every effect from scratch: mouse clicks with a separate press and release,
+keystrokes that never repeat exactly and a space bar that sounds like one, air moving for the cursor
+and camera, the notch rushing open into a landing thump, glassy notes as cards arrive, a check, a
+clock on the beat, whips on every cut, tasks landing as notes in the chord, and a bell and low hit
+for the logo. They share a small room reverb so they sound like one space, and dip under the voice
+so a keystroke never covers a word. A faint breathing room tone sits under it all, and drops out for
+the half-beat of silence before the drop.
+
 **The soundtrack is generated, not licensed.** `scripts/audio.mjs` composes and synthesizes the
 music and every sound effect — plucked strings, pads, drums, a riser into the drop — with no
 samples and nothing borrowed, so the film can be posted anywhere. Running it is deterministic, so

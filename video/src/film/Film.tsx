@@ -6,10 +6,8 @@ import { palette } from "../theme";
 import { Cursor } from "./Cursor";
 import { inkColor, paper, sans, serif } from "./fonts";
 import { Grain } from "./Grain";
-import { BEAT, cue, factorOf, lengthOf, startOf, type Section } from "./grid";
+import { BEAT, factorOf, lengthOf, startOf, type Section } from "./grid";
 import { Tempo } from "./tempo";
-import voiceover from "./voice-manifest.json";
-import voiceScript from "./voice.json";
 import { Camera, MacScreen, SW } from "./Mac";
 import { CommandBar, Island, MeetingIsland, Panel } from "./Panel";
 import { Words } from "./Type";
@@ -317,32 +315,8 @@ const End: React.FC = () => {
 };
 
 // ── Sound ────────────────────────────────────────────────────────────────────────────────────
-// Each cue is written against its section's original timing and placed by the same grid as the
-// pictures, so retiming a section moves its sounds with it.
-const cues: Array<[Section, number, string, number]> = [
-  ["hook", 0, "tick", 0.5], ["hook", 8, "tick", 0.45], ["hook", 15, "tick", 0.45], ["hook", 22, "tick", 0.55],
-  ["hook", 60, "tick", 0.5], ["hook", 68, "tick", 0.45], ["hook", 75, "tick", 0.55], ["hook", 83, "tick", 0.5],
-  // "here." and the notch opening, leading into the drop.
-  ["build", 96, "tick", 0.5], ["build", 104, "whoosh", 0.55],
-  // Ticking the task, starting the timer, collapsing into the island.
-  ["workday", 90, "click", 0.7], ["workday", 150, "click", 0.7], ["workday", 165, "pop", 0.6],
-  ["command", 30, "key", 0.8], ["command", 45, "key", 0.8], ["command", 104, "tick", 0.45],
-  ["ask", 50, "click", 0.6], ["ask", 62, "tick", 0.5], ["ask", 75, "tick", 0.5], ["ask", 88, "tick", 0.5],
-  ["end", 0, "chime", 0.5]
-];
-for (let f = 64; f < 100; f += 3) cues.push(["command", f, "type", 0.32]);
-for (let f = 4; f < 44; f += 3) cues.push(["ask", f, "type", 0.3]);
-
-/** How far the music comes down while someone is speaking: easing in before a line, out after. */
-const duckUnderVoice = (f: number) => {
-  let gain = 1;
-  // Each line carries the dip it needs, worked out by scripts/voice.mjs from the music under it.
-  for (const { from, frames, duck } of voiceover.lines) {
-    const t = interpolate(f, [from - 5, from, from + frames, from + frames + 8], [1, duck, duck, 1], clamp);
-    gain = Math.min(gain, t);
-  }
-  return gain;
-};
+// Music, voiceover, effects and room tone are placed, mixed and mastered by scripts/mix.mjs on the
+// same beat grid as these pictures, into one track the film plays.
 
 const scenes: Array<[Section, React.FC]> = [
   ["hook", Hook], ["build", Build], ["workday", Workday], ["keeps", Keeps],
@@ -360,17 +334,6 @@ export const Film: React.FC = () => (
       </Sequence>
     ))}
     <Grain />
-    {/* Headroom: effects land on top of the bed, so the bed sits below full scale. It dips under the voice. */}
-    <Audio src={staticFile("audio/music.wav")} volume={(f) => voiceScript.mix.music * duckUnderVoice(f)} />
-    {voiceover.lines.map((line) => (
-      <Sequence key={line.file} from={line.from}>
-        <Audio src={staticFile(line.file)} volume={1} />
-      </Sequence>
-    ))}
-    {cues.map(([section, original, name, vol], i) => (
-      <Sequence key={i} from={cue(section, original)}>
-        <Audio src={staticFile(`audio/${name}.wav`)} volume={vol} />
-      </Sequence>
-    ))}
+    <Audio src={staticFile("audio/mix.wav")} />
   </AbsoluteFill>
 );

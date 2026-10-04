@@ -1,0 +1,40 @@
+{
+  "voice": "af_heart",
+  "lines": [
+    {
+      "file": "voice/line-0.wav",
+      "from": 3,
+      "frames": 66
+    },
+    {
+      "file": "voice/line-1.wav",
+      "from": 108,
+      "frames": 29
+    },
+    {
+      "file": "voice/line-2.wav",
+      "from": 168,
+      "frames": 55
+    },
+    {
+      "file": "voice/line-3.wav",
+      "from": 262,
+      "frames": 36
+    },
+    {
+      "file": "voice/line-4.wav",
+      "from": 322,
+      "frames": 57
+    },
+    {
+      "file": "voice/line-5.wav",
+      "from": 421,
+      "frames": 68
+    },
+    {
+      "file": "voice/line-6.wav",
+      "from": 629,
+      "frames": 58
+    }
+  ]
+}

@@ -1,0 +1,42 @@
+{
+  "model": "onnx-community/Kokoro-82M-v1.0-ONNX",
+  "voice": "af_heart",
+  "speed": 1.06,
+  "lines": [
+    {
+      "section": "hook",
+      "at": 4,
+      "text": "I had a to-do list. I never looked at it."
+    },
+    {
+      "section": "build",
+      "at": 10,
+      "text": "So I put it here."
+    },
+    {
+      "section": "workday",
+      "at": 20,
+      "text": "Hover, and your whole day's right there."
+    },
+    {
+      "section": "keeps",
+      "at": 2,
+      "text": "The notch keeps time."
+    },
+    {
+      "section": "command",
+      "at": 12,
+      "text": "Or hit option space, and just type."
+    },
+    {
+      "section": "ask",
+      "at": 6,
+      "text": "Or let Claude or ChatGPT run your day."
+    },
+    {
+      "section": "end",
+      "at": 6,
+      "text": "Black Hole. Free and open source."
+    }
+  ]
+}

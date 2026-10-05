@@ -1,6 +1,8 @@
 #!/bin/bash
 # Checks the live site answers agents the way it claims to. Usage: ./verify.sh [origin]
 ORIGIN="${1:-https://getblackhole.app}"
+# Marked so the site doesn't count these requests as visits or agent reads.
+curl() { command curl -H "X-Blackhole-Check: 1" "$@"; }
 pass=0; fail=0
 check() { # name, expected, actual
   if [ "$3" = "$2" ]; then printf "  ok   %s\n" "$1"; pass=$((pass+1));

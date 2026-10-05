@@ -4,3 +4,5 @@ wrangler.toml
 README.md
 worker.js
 verify.sh
+stats.sh
+migrations

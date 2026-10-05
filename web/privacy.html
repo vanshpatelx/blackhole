@@ -25,12 +25,12 @@
   <div class="menubar-right">
     <a href="/">Home</a>
     <a href="https://github.com/vanshpatelx/blackhole">GitHub</a>
-    <a class="pill" href="https://github.com/vanshpatelx/blackhole/releases/latest/download/BlackHole.dmg">Download</a>
+    <a class="pill" href="/download">Download</a>
   </div>
 </div>
 <main class="prose">
 <h1>Privacy</h1>
-<p>Black Hole has no accounts, no analytics and no telemetry. Nobody, including us, can see what you put in it.</p>
+<p>The Black Hole app has no accounts, no analytics and no telemetry. Nobody, including us, can see what you put in it. (This website counts visits privately — see the last section.)</p>
 <h2>What is stored, and where</h2>
 <p>Your tasks, focus sessions and notes live in a database on your own Mac, at <code>~/Library/Application Support/Black Hole/</code>. Nothing is uploaded anywhere. There is no sync service, no cloud backup and no sign-in. If you delete the app and that folder, the data is gone — so if you want a copy, Settings has an export that writes everything out as JSON you can read.</p>
 <h2>Calendar</h2>
@@ -41,7 +41,9 @@
 <p>AI access is off until you turn it on. When you do, your Mac gets a permanent HTTPS address and runs a tunnel so an assistant can reach the MCP server on your machine. Requests travel from the assistant, through Cloudflare, straight down that tunnel to your Mac. Your tasks and notes are not stored by, or visible to, any server of ours.</p>
 <p>One thing to know: the access token is part of that URL, so it is visible to whoever operates the edge the request crosses — for the built-in address, the getblackhole.app Cloudflare zone — and to whichever assistant you paste it into. Treat the URL like a password, and reset it from the Copy menu if it leaks. If you would rather the traffic never left your own network, installing Tailscale switches the tunnel to your private tailnet instead.</p>
 <h2>This website</h2>
-<p>getblackhole.app is static files on Cloudflare. It sets no cookies and runs no analytics. The page asks GitHub for the latest release number so the download button points at the current version; that request goes to GitHub, not to us.</p>
+<p>getblackhole.app counts its visits so we know whether anyone is finding it — without cookies, without any script in your browser, and without storing your IP address.</p>
+<p>When a page loads, the server records which page it was, the site that linked you here (its domain only, never the full address), your country as Cloudflare reports it, and an anonymous visitor code. That code is a scrambled combination of your IP address and browser name with a random value that is created fresh each day and deleted the next. So it can tell that two pages were viewed by the same visitor on the same day, but nobody — including us — can turn it back into an IP address or recognise you on a different day. Clicks on the Download button are counted the same way, and so are AI agents reading the site's Markdown, kept separately from people. Link previews and other automated traffic aren't counted at all.</p>
+<p>The counts live in a Cloudflare database belonging to this project, are used only to see how many people visit and where they came from, are never sold or shared, and are deleted after a year. The page also asks GitHub for the latest release number so the version label stays current; that request goes to GitHub, not to us.</p>
 </main>
 <footer>
   <p>

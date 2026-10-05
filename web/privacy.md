@@ -1,6 +1,6 @@
 # Privacy
 
-Black Hole has no accounts, no analytics and no telemetry. Nobody, including us, can see what you put in it.
+The Black Hole app has no accounts, no analytics and no telemetry. Nobody, including us, can see what you put in it. (This website counts visits privately — see the last section.)
 
 ## What is stored, and where
 
@@ -22,7 +22,11 @@ One thing to know: the access token is part of that URL, so it is visible to who
 
 ## This website
 
-getblackhole.app is static files on Cloudflare. It sets no cookies and runs no analytics. The page asks GitHub for the latest release number so the download button points at the current version; that request goes to GitHub, not to us.
+getblackhole.app counts its visits so we know whether anyone is finding it — without cookies, without any script in your browser, and without storing your IP address.
+
+When a page loads, the server records which page it was, the site that linked you here (its domain only, never the full address), your country as Cloudflare reports it, and an anonymous visitor code. That code is a scrambled combination of your IP address and browser name with a random value that is created fresh each day and deleted the next. So it can tell that two pages were viewed by the same visitor on the same day, but nobody — including us — can turn it back into an IP address or recognise you on a different day. Clicks on the Download button are counted the same way, and so are AI agents reading the site's Markdown, kept separately from people. Link previews and other automated traffic aren't counted at all.
+
+The counts live in a Cloudflare database belonging to this project, are used only to see how many people visit and where they came from, are never sold or shared, and are deleted after a year. The page also asks GitHub for the latest release number so the version label stays current; that request goes to GitHub, not to us.
 
 ---
 

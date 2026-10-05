@@ -56,6 +56,14 @@ contains "og:image" 'property="og:image"' "$home"
 contains "html lang" '<html lang=' "$home"
 contains "Organization schema" '"@type":"Organization"' "$home"
 
+echo "Visit counting"
+h=$(curl -sS -D- -o/dev/null "$ORIGIN/download")
+contains "/download redirects" "302" "$(printf '%s' "$h" | head -1)"
+contains "/download goes to the latest DMG" "location: https://github.com/vanshpatelx/blackhole/releases/latest/download/BlackHole.dmg" "$h"
+h=$(curl -sS -L -D- -o/dev/null -H 'Accept: text/html' "$ORIGIN/")
+if printf '%s' "$h" | grep -qi '^set-cookie'; then printf "  FAIL no cookies — a Set-Cookie header was sent\n"; fail=$((fail+1)); else printf "  ok   no cookies\n"; pass=$((pass+1)); fi
+contains "privacy page explains counting" "scrambled combination" "$(curl -sS -L "$ORIGIN/privacy")"
+
 echo
 echo "$pass passed, $fail failed"
 [ "$fail" -eq 0 ]

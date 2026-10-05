@@ -15,3 +15,13 @@ routes = [
   { pattern = "getblackhole.app", custom_domain = true },
   { pattern = "www.getblackhole.app", custom_domain = true }
 ]
+
+# Private visit counts: see `record` in worker.js and the Privacy page.
+[[d1_databases]]
+binding = "DB"
+database_name = "blackhole-analytics"
+database_id = "d6fee4bb-09d8-44d8-a1a1-b268b3611f97"
+
+# Daily cleanup: yesterday's salt, and anything older than a year.
+[triggers]
+crons = ["17 3 * * *"]

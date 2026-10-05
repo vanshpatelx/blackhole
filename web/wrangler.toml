@@ -2,6 +2,13 @@ name = "blackhole"
 main = "worker.js"
 compatibility_date = "2026-09-01"
 
+# Top level, before any [section]: in TOML every key after a header belongs to that section, and
+# when this sat below [assets] wrangler ignored it ("unexpected fields found in assets field").
+routes = [
+  { pattern = "getblackhole.app", custom_domain = true },
+  { pattern = "www.getblackhole.app", custom_domain = true }
+]
+
 # The landing page is plain static files served straight from this folder. The worker in front of
 # them only handles Markdown content negotiation and the 404 page.
 [assets]
@@ -11,10 +18,6 @@ binding = "ASSETS"
 # worker never runs — so `/` would never get the chance to answer in Markdown.
 run_worker_first = true
 
-routes = [
-  { pattern = "getblackhole.app", custom_domain = true },
-  { pattern = "www.getblackhole.app", custom_domain = true }
-]
 
 # Private visit counts: see `record` in worker.js and the Privacy page.
 [[d1_databases]]

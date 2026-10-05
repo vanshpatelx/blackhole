@@ -60,6 +60,8 @@ async function record(env, request, kind, path) {
 
 /** Counting happens after the response is on its way, and a failure never touches the page. */
 function count(ctx, env, request, kind, path) {
+  // Our own checks (web/verify.sh) mark themselves, so testing the site never inflates its numbers.
+  if (request.headers.get("x-blackhole-check")) return;
   const purpose = request.headers.get("sec-purpose") || request.headers.get("purpose") || "";
   if (/prefetch|prerender/i.test(purpose)) return;
   if (kind !== "agent" && AUTOMATED.test(request.headers.get("user-agent") || "")) return;
